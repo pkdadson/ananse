@@ -1,0 +1,45 @@
+:root {
+  --canvas-bg: hsl(0 0% 100%);
+  --canvas-node-bg: hsl(0 0% 100%);
+  --canvas-node-border: hsl(240 5.9% 90%);
+  --canvas-node-text: hsl(240 10% 4%);
+  --canvas-node-text-muted: hsl(240 4% 46%);
+  --canvas-node-radius: 12px;
+  --canvas-node-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  --canvas-node-shadow-hover: 0 4px 12px 0 rgb(0 0 0 / 0.15);
+
+  --canvas-edge-color: hsl(240 5% 70%);
+  --canvas-edge-width: 1.5px;
+  --canvas-edge-highlight: hsl(221 83% 53%);
+
+  --canvas-focus-ring: hsl(221 83% 53%);
+  --canvas-selection-bg: hsl(221 83% 53% / 0.1);
+
+  --canvas-dept-engineering: hsl(221 83% 53%);
+  --canvas-dept-design: hsl(280 65% 60%);
+  --canvas-dept-product: hsl(160 60% 45%);
+  --canvas-dept-sales: hsl(30 90% 55%);
+  --canvas-dept-marketing: hsl(340 75% 55%);
+  --canvas-dept-hr: hsl(190 70% 50%);
+  --canvas-dept-finance: hsl(45 90% 50%);
+  --canvas-dept-operations: hsl(250 45% 55%);
+
+  --canvas-tenure-new: hsl(200 90% 55%);
+  --canvas-tenure-tenured: hsl(160 60% 45%);
+  --canvas-tenure-veteran: hsl(45 90% 55%);
+
+  --canvas-role-executive-border: hsl(45 90% 55%);
+  --canvas-role-executive-shadow: 0 8px 24px 0 rgb(0 0 0 / 0.12);
+  --canvas-role-vacant-border: hsl(240 5% 70%);
+  --canvas-role-vacant-bg: hsl(240 4.8% 96%);
+}
+
+[data-theme='dark'] {
+  --canvas-bg: hsl(240 10% 4%);
+  --canvas-node-bg: hsl(240 10% 8%);
+  --canvas-node-border: hsl(240 5% 20%);
+  --canvas-node-text: hsl(0 0% 100%);
+  --canvas-node-text-muted: hsl(240 5% 65%);
+  --canvas-edge-color: hsl(240 5% 40%);
+  --canvas-role-vacant-bg: hsl(240 10% 12%);
+}
