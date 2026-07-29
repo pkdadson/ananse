@@ -43,7 +43,7 @@ export function EmployeeCardDetailed({ data }: EmployeeCardDetailedProps): React
         ) : null}
       </div>
       {data.email || data.location ? (
-        <div className="flex flex-col gap-0.5 text-[11px] text-canvas-node-text-muted">
+        <div className="flex flex-col gap-0.5 text-xs text-canvas-node-text-muted">
           {data.email ? <div className="truncate">{data.email}</div> : null}
           {data.location ? <div className="truncate">{data.location}</div> : null}
         </div>

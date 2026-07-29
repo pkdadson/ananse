@@ -11,3 +11,49 @@ body,
   height: 100%;
   background: var(--canvas-bg);
 }
+
+/* Global focus-visible ring for keyboard users */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+[role="searchbox"]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid hsl(221 83% 53%);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Enlarge react-flow zoom/fit controls to hit ≥40px touch target */
+.react-flow__controls {
+  gap: 4px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--canvas-node-bg);
+  border: 1px solid var(--canvas-node-border);
+  box-shadow: var(--canvas-node-shadow);
+}
+.react-flow__controls-button {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 8px !important;
+  border: none !important;
+  background: transparent !important;
+  color: var(--canvas-node-text) !important;
+}
+.react-flow__controls-button:hover {
+  background: var(--canvas-selection-bg) !important;
+}
+.react-flow__controls-button svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+/* Hide minimap on small screens (would overlap card content) */
+@media (max-width: 640px) {
+  .react-flow__minimap {
+    display: none !important;
+  }
+}

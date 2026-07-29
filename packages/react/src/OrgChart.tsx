@@ -139,28 +139,78 @@ export type OrgChartProps = {
   showInspector?: boolean;
 };
 
+function nodeSize(n: Node): { w: number; h: number } {
+  return {
+    w: n.measured?.width ?? n.width ?? 240,
+    h: n.measured?.height ?? n.height ?? 120,
+  };
+}
+
+/**
+ * Resolve reparent target: prefer node under pointer; else nearest node center
+ * within a generous threshold (so drop-near still works).
+ */
 function findDropTargetId(
   draggedId: string,
   flowX: number,
   flowY: number,
   nodes: Node[],
   employees: Employee[],
+  draggedPosition?: { x: number; y: number },
 ): string | null {
   const forbidden = new Set([draggedId, ...getDescendants(employees, draggedId).map((e) => e.id)]);
 
-  // Prefer top-most (highest z) node whose bounds contain the point
+  // 1) Exact hit under pointer (last match = top-most in array order)
   let hit: string | null = null;
   for (const n of nodes) {
     if (forbidden.has(n.id)) continue;
-    const w = n.measured?.width ?? n.width ?? 240;
-    const h = n.measured?.height ?? n.height ?? 120;
+    const { w, h } = nodeSize(n);
     const x = n.position.x;
     const y = n.position.y;
     if (flowX >= x && flowX <= x + w && flowY >= y && flowY <= y + h) {
       hit = n.id;
     }
   }
-  return hit;
+  if (hit) return hit;
+
+  // 2) Nearest node center to pointer (or dragged node center)
+  const refX = flowX;
+  const refY = flowY;
+  const NEAR_PX = 160;
+  let best: { id: string; dist: number } | null = null;
+  for (const n of nodes) {
+    if (forbidden.has(n.id)) continue;
+    const { w, h } = nodeSize(n);
+    const cx = n.position.x + w / 2;
+    const cy = n.position.y + h / 2;
+    const dist = Math.hypot(cx - refX, cy - refY);
+    if (dist <= NEAR_PX && (!best || dist < best.dist)) {
+      best = { id: n.id, dist };
+    }
+  }
+  if (best) return best.id;
+
+  // 3) Fallback: nearest to dragged node center after drop
+  if (draggedPosition) {
+    const dragged = nodes.find((n) => n.id === draggedId);
+    const { w: dw, h: dh } = dragged ? nodeSize(dragged) : { w: 240, h: 120 };
+    const dx = draggedPosition.x + dw / 2;
+    const dy = draggedPosition.y + dh / 2;
+    let nearest: { id: string; dist: number } | null = null;
+    for (const n of nodes) {
+      if (forbidden.has(n.id)) continue;
+      const { w, h } = nodeSize(n);
+      const cx = n.position.x + w / 2;
+      const cy = n.position.y + h / 2;
+      const dist = Math.hypot(cx - dx, cy - dy);
+      if (dist <= NEAR_PX && (!nearest || dist < nearest.dist)) {
+        nearest = { id: n.id, dist };
+      }
+    }
+    return nearest?.id ?? null;
+  }
+
+  return null;
 }
 
 function OrgChartInner({
@@ -314,7 +364,8 @@ function OrgChartInner({
               y: event.changedTouches?.[0]?.clientY ?? 0,
             };
       const flow = screenToFlowPosition(point);
-      const targetId = findDropTargetId(node.id, flow.x, flow.y, getNodes(), data);
+      const nodes = getNodes();
+      const targetId = findDropTargetId(node.id, flow.x, flow.y, nodes, data, node.position);
       if (targetId) {
         editor.onReparent(node.id, targetId);
       }
@@ -401,8 +452,8 @@ function OrgChartInner({
         }}
         {...(isEdit ? { onNodeDragStop } : {})}
         fitView
-        fitViewOptions={{ padding: 0.2, minZoom: 0.5, maxZoom: 1.5 }}
-        minZoom={0.2}
+        fitViewOptions={{ padding: 0.15, minZoom: 0.1, maxZoom: 1.5 }}
+        minZoom={0.1}
         maxZoom={2}
         proOptions={{ hideAttribution: true }}
         defaultEdgeOptions={{
@@ -414,7 +465,7 @@ function OrgChartInner({
         {showControls ? (
           <Controls
             showInteractive={false}
-            fitViewOptions={{ padding: 0.2, minZoom: 0.5, maxZoom: 1.5 }}
+            fitViewOptions={{ padding: 0.15, minZoom: 0.1, maxZoom: 1.5 }}
           />
         ) : null}
         {showMinimap ? (
@@ -431,7 +482,12 @@ function OrgChartInner({
             }}
             nodeStrokeColor="#64748b"
             maskColor="rgb(15, 23, 42, 0.08)"
-            style={{ background: "var(--canvas-node-bg)" }}
+            style={{
+              background: "var(--canvas-node-bg)",
+              // When inspector is open, push minimap left of it (inspector is 256px wide + 12px gap)
+              right:
+                isEdit && showInspector && editor?.onUpdate && selectedEmployee ? 288 : undefined,
+            }}
           />
         ) : null}
       </ReactFlow>

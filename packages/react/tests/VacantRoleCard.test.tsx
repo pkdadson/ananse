@@ -8,9 +8,10 @@ describe("VacantRoleCard", () => {
     expect(screen.getByText("Senior Product Designer")).toBeInTheDocument();
   });
 
-  it("renders an OPEN badge", () => {
+  it("renders an OPEN badge and accessible open-role label", () => {
     render(<VacantRoleCard title="Senior Engineer" />);
     expect(screen.getByText("OPEN")).toBeInTheDocument();
+    expect(screen.getByLabelText(/open role: senior engineer/i)).toBeInTheDocument();
   });
 
   it("has vacant role attribute for styling and testing", () => {

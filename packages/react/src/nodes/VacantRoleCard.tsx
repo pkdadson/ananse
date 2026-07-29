@@ -9,19 +9,28 @@ export function VacantRoleCard({ title, department }: VacantRoleCardProps): Reac
   return (
     <div
       data-canvas-role="vacant"
-      className="flex items-center gap-3 rounded-canvas-node border-2 border-dashed p-3"
+      aria-label={`Open role: ${title}`}
+      className="flex items-center gap-3 rounded-canvas-node p-3"
       style={{
+        minWidth: 220,
+        borderWidth: 2,
+        borderStyle: "dashed",
         borderColor: "var(--canvas-role-vacant-border)",
         background: "var(--canvas-role-vacant-bg)",
-        minWidth: 220,
       }}
     >
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-canvas-node-border text-xs font-semibold text-canvas-node-text-muted">
+      <div
+        aria-hidden="true"
+        className="flex h-10 w-10 items-center justify-center rounded-full bg-canvas-node-border text-xs font-semibold text-canvas-node-text-muted"
+      >
         ?
       </div>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="truncate text-sm font-semibold text-canvas-node-text-muted">{title}</div>
-        <div className="text-[10px] font-bold uppercase tracking-widest text-canvas-node-text-muted">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <div className="truncate text-sm font-semibold text-canvas-node-text">{title}</div>
+        <div
+          aria-hidden="true"
+          className="text-[11px] font-bold uppercase tracking-widest text-canvas-node-text-muted"
+        >
           OPEN
         </div>
       </div>
@@ -30,6 +39,7 @@ export function VacantRoleCard({ title, department }: VacantRoleCardProps): Reac
           data-canvas-dept-chip={department}
           className="h-6 w-1.5 rounded-full opacity-60"
           style={{ background: `var(--canvas-dept-${department})` }}
+          aria-hidden="true"
         />
       ) : null}
     </div>

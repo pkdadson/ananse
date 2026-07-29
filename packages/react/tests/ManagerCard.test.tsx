@@ -25,7 +25,7 @@ describe("ManagerCard", () => {
         onToggleCollapse={() => {}}
       />,
     );
-    expect(screen.getByText("1 report")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /hide 1 report/i })).toBeInTheDocument();
   });
 
   it("invokes onToggleCollapse when the toggle is clicked", async () => {
@@ -38,7 +38,7 @@ describe("ManagerCard", () => {
         onToggleCollapse={onToggle}
       />,
     );
-    await userEvent.click(screen.getByRole("button", { name: /collapse subtree/i }));
+    await userEvent.click(screen.getByRole("button", { name: /hide 3 reports/i }));
     expect(onToggle).toHaveBeenCalledTimes(1);
   });
 
@@ -51,6 +51,6 @@ describe("ManagerCard", () => {
         onToggleCollapse={() => {}}
       />,
     );
-    expect(screen.getByRole("button", { name: /expand subtree/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /show 3 reports/i })).toBeInTheDocument();
   });
 });

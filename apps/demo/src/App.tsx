@@ -10,14 +10,68 @@ const VARIANTS: { id: NodeVariant; label: string }[] = [
   { id: "minimal", label: "Minimal" },
 ];
 
-const btnStyle = (active: boolean): React.CSSProperties => ({
-  padding: "4px 10px",
-  borderRadius: 6,
-  border: "1px solid var(--canvas-node-border)",
-  background: active ? "var(--canvas-selection-bg)" : "transparent",
+type ButtonVariant = "secondary" | "primary";
+
+// Use longhand border* only — mixing `border` + `borderColor` triggers React warnings.
+const buttonBase: React.CSSProperties = {
+  minHeight: 36,
+  padding: "8px 14px",
+  borderRadius: 8,
+  borderWidth: 1,
+  borderStyle: "solid",
+  borderColor: "var(--canvas-node-border)",
   cursor: "pointer",
-  fontSize: 12,
+  fontSize: 14,
   fontWeight: 600,
+  lineHeight: 1,
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  transition: "background-color 120ms ease, color 120ms ease, border-color 120ms ease",
+};
+
+function btnStyle(active: boolean, variant: ButtonVariant = "secondary"): React.CSSProperties {
+  if (active) {
+    return {
+      ...buttonBase,
+      background: "hsl(221 83% 53%)",
+      color: "#fff",
+      borderColor: "hsl(221 83% 45%)",
+    };
+  }
+  return {
+    ...buttonBase,
+    background: variant === "primary" ? "hsl(221 83% 53%)" : "transparent",
+    color: variant === "primary" ? "#fff" : "var(--canvas-node-text)",
+    borderColor: variant === "primary" ? "hsl(221 83% 45%)" : "var(--canvas-node-border)",
+  };
+}
+
+const groupStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 4,
+  padding: 3,
+  borderRadius: 10,
+  background: "hsl(240 5% 96%)",
+  borderWidth: 1,
+  borderStyle: "solid",
+  borderColor: "var(--canvas-node-border)",
+};
+
+const groupButton = (active: boolean): React.CSSProperties => ({
+  minHeight: 30,
+  padding: "6px 12px",
+  borderRadius: 7,
+  border: "1px solid transparent",
+  cursor: "pointer",
+  fontSize: 13,
+  fontWeight: 600,
+  lineHeight: 1,
+  background: active ? "#fff" : "transparent",
+  color: active ? "hsl(221 83% 40%)" : "var(--canvas-node-text)",
+  boxShadow: active ? "0 1px 2px rgb(0 0 0 / 0.08)" : "none",
+  transition: "background-color 120ms ease, color 120ms ease, box-shadow 120ms ease",
 });
 
 export function App(): ReactElement {
@@ -72,22 +126,36 @@ export function App(): ReactElement {
           display: "flex",
           flexWrap: "wrap",
           alignItems: "center",
-          gap: 12,
-          padding: "10px 16px",
+          gap: 10,
+          padding: "12px 16px",
           borderBottom: "1px solid var(--canvas-node-border)",
           background: "var(--canvas-node-bg)",
           zIndex: 20,
         }}
       >
-        <strong style={{ color: "var(--canvas-node-text)" }}>Canvas — Org Chart Kit</strong>
-        <div style={{ display: "flex", gap: 6 }}>
+        <strong
+          style={{
+            color: "var(--canvas-node-text)",
+            fontSize: 15,
+            marginRight: 4,
+          }}
+        >
+          Canvas — Org Chart Kit
+        </strong>
+        <div style={groupStyle} aria-label="Mode">
           {(["view", "edit"] as const).map((m) => (
-            <button key={m} type="button" onClick={() => setMode(m)} style={btnStyle(mode === m)}>
-              {m}
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMode(m)}
+              style={groupButton(mode === m)}
+              aria-pressed={mode === m}
+            >
+              {m === "view" ? "View" : "Edit"}
             </button>
           ))}
         </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
           <input
             ref={fileRef}
             type="file"
@@ -111,19 +179,19 @@ export function App(): ReactElement {
               ...btnStyle(false),
               textDecoration: "none",
               color: "inherit",
-              display: "inline-block",
             }}
           >
             Download CSV
           </a>
         </div>
-        <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
+        <div style={{ ...groupStyle, marginLeft: "auto" }} aria-label="Card density">
           {VARIANTS.map((v) => (
             <button
               key={v.id}
               type="button"
               onClick={() => setNodeVariant(v.id)}
-              style={btnStyle(nodeVariant === v.id)}
+              style={groupButton(nodeVariant === v.id)}
+              aria-pressed={nodeVariant === v.id}
             >
               {v.label}
             </button>
@@ -134,8 +202,8 @@ export function App(): ReactElement {
         <p
           style={{
             margin: 0,
-            padding: "6px 16px",
-            fontSize: 12,
+            padding: "8px 16px",
+            fontSize: 13,
             color: "var(--canvas-node-text)",
             borderBottom: "1px solid var(--canvas-node-border)",
             background: "var(--canvas-bg)",
@@ -148,11 +216,11 @@ export function App(): ReactElement {
         <p
           style={{
             margin: 0,
-            padding: "6px 16px",
-            fontSize: 12,
-            color: "var(--canvas-node-text-muted)",
+            padding: "8px 16px",
+            fontSize: 13,
+            color: "hsl(221 83% 30%)",
             borderBottom: "1px solid var(--canvas-node-border)",
-            background: "var(--canvas-selection-bg)",
+            background: "hsl(221 83% 96%)",
           }}
         >
           Edit mode: drag onto a manager to reparent · select to open inspector · toolbar for

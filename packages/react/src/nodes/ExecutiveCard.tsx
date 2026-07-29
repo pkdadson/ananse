@@ -11,8 +11,12 @@ export function ExecutiveCard({ data, variant = "default" }: ExecutiveCardProps)
   return (
     <div
       data-canvas-role="executive"
-      className="rounded-canvas-node border-2 shadow-canvas-executive"
-      style={{ borderColor: "var(--canvas-role-executive-border)" }}
+      className="rounded-canvas-node shadow-canvas-executive"
+      style={{
+        borderWidth: 2,
+        borderStyle: "solid",
+        borderColor: "var(--canvas-role-executive-border)",
+      }}
     >
       <EmployeeFace data={data} variant={variant} />
     </div>
