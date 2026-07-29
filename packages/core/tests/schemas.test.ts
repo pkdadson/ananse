@@ -49,3 +49,36 @@ describe("orgChartSchema", () => {
     expect(parsed.success).toBe(true);
   });
 });
+
+describe("employeeSchema people fields", () => {
+  it("accepts email, location, tenureYears, employmentType, workMode", () => {
+    const parsed = employeeSchema.safeParse({
+      id: "1",
+      name: "Ada",
+      email: "ada@example.com",
+      location: "London",
+      tenureYears: 4,
+      employmentType: "employee",
+      workMode: "remote",
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it("rejects invalid employmentType", () => {
+    const parsed = employeeSchema.safeParse({
+      id: "1",
+      name: "Ada",
+      employmentType: "freelancer",
+    });
+    expect(parsed.success).toBe(false);
+  });
+
+  it("rejects invalid workMode", () => {
+    const parsed = employeeSchema.safeParse({
+      id: "1",
+      name: "Ada",
+      workMode: "spaceship",
+    });
+    expect(parsed.success).toBe(false);
+  });
+});

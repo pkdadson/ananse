@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+export const employmentTypeSchema = z.enum(["employee", "contractor", "intern"]);
+export const workModeSchema = z.enum(["onsite", "hybrid", "remote"]);
+
 export const employeeSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -8,6 +11,11 @@ export const employeeSchema = z.object({
   department: z.string().optional(),
   managerId: z.string().nullable().optional(),
   dottedLineManagerIds: z.array(z.string()).optional(),
+  email: z.string().email().optional(),
+  location: z.string().optional(),
+  tenureYears: z.number().nonnegative().optional(),
+  employmentType: employmentTypeSchema.optional(),
+  workMode: workModeSchema.optional(),
   meta: z.record(z.unknown()).optional(),
 });
 

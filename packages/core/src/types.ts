@@ -1,3 +1,6 @@
+export type EmploymentType = "employee" | "contractor" | "intern";
+export type WorkMode = "onsite" | "hybrid" | "remote";
+
 export type Employee = {
   id: string;
   name: string;
@@ -6,6 +9,11 @@ export type Employee = {
   department?: string;
   managerId?: string | null;
   dottedLineManagerIds?: string[];
+  email?: string;
+  location?: string;
+  tenureYears?: number;
+  employmentType?: EmploymentType;
+  workMode?: WorkMode;
   meta?: Record<string, unknown>;
 };
 
