@@ -1,21 +1,15 @@
 import type { Employee } from "@canvas/core";
 import type { ReactElement } from "react";
+import { initialsOf } from "./initials.js";
 
 export type EmployeeCardProps = {
   data: Employee;
 };
 
-function initialsOf(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  const first = parts[0]?.[0] ?? "";
-  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? "") : "";
-  return (first + last).toUpperCase();
-}
-
 export function EmployeeCard({ data }: EmployeeCardProps): ReactElement {
   return (
     <div
-      className="flex items-center gap-3 rounded-canvas-node border border-canvas-node-border bg-canvas-node p-3 shadow-canvas-node hover:shadow-canvas-node-hover"
+      className="flex items-center gap-3 rounded-canvas-node border border-canvas-node-border bg-canvas-node p-3 shadow-canvas-node transition duration-150 hover:-translate-y-0.5 hover:shadow-canvas-node-hover"
       style={{ minWidth: 220 }}
     >
       {data.photoUrl ? (
