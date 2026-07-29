@@ -145,6 +145,9 @@ function OrgChartInner({
           id: n.id,
           type,
           position: n.position,
+          // Explicit size helps MiniMap render node rects before ResizeObserver runs.
+          width: n.size.width,
+          height: n.size.height,
           sourcePosition: Position.Bottom,
           targetPosition: Position.Top,
           draggable: false,
@@ -215,9 +218,17 @@ function OrgChartInner({
           <MiniMap
             pannable
             zoomable
-            nodeStrokeWidth={2}
-            nodeColor="var(--canvas-node-border)"
-            maskColor="rgb(240, 240, 245, 0.7)"
+            nodeStrokeWidth={3}
+            nodeColor={(node) => {
+              const role = (node.data as OrgChartNodeData | undefined)?.employee?.meta?.role;
+              if (role === "vacant") return "#a1a1aa";
+              if (role === "executive" || node.type === "executive") return "#f59e0b";
+              if (node.type === "manager") return "#3b82f6";
+              return "#94a3b8";
+            }}
+            nodeStrokeColor="#64748b"
+            maskColor="rgb(15, 23, 42, 0.08)"
+            style={{ background: "var(--canvas-node-bg)" }}
           />
         ) : null}
       </ReactFlow>
