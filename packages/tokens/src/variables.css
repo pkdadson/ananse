@@ -6,7 +6,7 @@
   --canvas-node-text-muted: hsl(240 4% 46%);
   --canvas-node-radius: 12px;
   --canvas-node-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
-  --canvas-node-shadow-hover: 0 4px 12px 0 rgb(0 0 0 / 0.15);
+  --canvas-node-shadow-hover: 0 8px 20px -2px rgb(0 0 0 / 0.18);
 
   --canvas-edge-color: hsl(240 5% 70%);
   --canvas-edge-width: 1.5px;
@@ -32,6 +32,15 @@
   --canvas-role-executive-shadow: 0 8px 24px 0 rgb(0 0 0 / 0.12);
   --canvas-role-vacant-border: hsl(240 5% 70%);
   --canvas-role-vacant-bg: hsl(240 4.8% 96%);
+
+  --canvas-badge-bg: hsl(240 5% 96%);
+  --canvas-badge-text: hsl(240 4% 30%);
+  --canvas-badge-remote: hsl(200 90% 40%);
+  --canvas-badge-hybrid: hsl(250 45% 55%);
+  --canvas-badge-onsite: hsl(160 40% 35%);
+  --canvas-badge-contractor: hsl(30 90% 45%);
+  --canvas-badge-intern: hsl(280 50% 50%);
+  --canvas-badge-tenure: hsl(221 83% 53%);
 }
 
 [data-theme="dark"] {
@@ -42,4 +51,6 @@
   --canvas-node-text-muted: hsl(240 5% 65%);
   --canvas-edge-color: hsl(240 5% 40%);
   --canvas-role-vacant-bg: hsl(240 10% 12%);
+  --canvas-badge-bg: hsl(240 6% 16%);
+  --canvas-badge-text: hsl(240 5% 80%);
 }
