@@ -1,6 +1,7 @@
 import type {
   AddVacantRoleInput,
   Employee,
+  EmployeePatch,
   LayoutResult,
   OrgChartLayoutOptions,
 } from "@canvas/core";
@@ -21,6 +22,7 @@ import {
 import { type ReactElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "@xyflow/react/dist/style.css";
 import { EditorToolbar } from "./controls/EditorToolbar.js";
+import { InspectorPanel } from "./controls/InspectorPanel.js";
 import { SearchBar } from "./controls/SearchBar.js";
 import { DottedEdge } from "./edges/DottedEdge.js";
 import { SolidEdge } from "./edges/SolidEdge.js";
@@ -114,6 +116,7 @@ export type OrgChartEditorApi = {
   onReparent: (employeeId: string, newManagerId: string | null) => boolean | undefined;
   onAddVacant?: (input: AddVacantRoleInput) => boolean | undefined;
   onRemove?: (employeeId: string) => boolean | undefined;
+  onUpdate?: (employeeId: string, patch: EmployeePatch) => boolean | undefined;
   onUndo?: () => void;
   onRedo?: () => void;
   canUndo?: boolean;
@@ -132,6 +135,8 @@ export type OrgChartProps = {
   /** When mode is edit, wire mutations from useOrgChartEditor. */
   editor?: OrgChartEditorApi;
   showEditorToolbar?: boolean;
+  /** Side panel to edit selected person fields (edit mode). Default true when editor provided. */
+  showInspector?: boolean;
 };
 
 function findDropTargetId(
@@ -168,6 +173,7 @@ function OrgChartInner({
   nodeVariant = "default",
   editor,
   showEditorToolbar = true,
+  showInspector = true,
 }: OrgChartProps): ReactElement {
   const isEdit = mode === "edit" && editor !== undefined;
   const { visibleIds, isCollapsed, toggleCollapse } = useOrgChartState(data);
@@ -176,6 +182,10 @@ function OrgChartInner({
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { screenToFlowPosition, getNodes } = useReactFlow();
+  const selectedEmployee = useMemo(
+    () => (selectedId ? (data.find((e) => e.id === selectedId) ?? null) : null),
+    [data, selectedId],
+  );
 
   const onFocus = useCallback((id: string) => setFocus(id), [setFocus]);
   useKeyboardNav({ employees: data, focusedId, onFocus });
@@ -358,6 +368,17 @@ function OrgChartInner({
               : {})}
             hasSelection={Boolean(selectedId)}
             error={editor.lastError ?? null}
+          />
+        </div>
+      ) : null}
+      {isEdit && showInspector && editor?.onUpdate && selectedEmployee ? (
+        <div style={{ position: "absolute", top: 56, right: 12, zIndex: 10 }}>
+          <InspectorPanel
+            employee={selectedEmployee}
+            onChange={(patch) => {
+              editor.onUpdate?.(selectedEmployee.id, patch);
+            }}
+            onClose={() => setSelectedId(null)}
           />
         </div>
       ) : null}

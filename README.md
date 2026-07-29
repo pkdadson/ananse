@@ -61,7 +61,7 @@ The chart container needs an explicit height (e.g. `100vh` or a flex child with 
 - **Densities** — `default` | `detailed` | `compact` | `minimal`
 - **Badges** — work mode, employment type, tenure chips on detailed cards
 - **Data adapters** — `parseEmployeesCsv`, `fromHrisJson`, `fromNestedTree` in `@canvas/core`
-- **Editor mode** — drag to reparent, vacant roles, undo/redo, delete (`useOrgChartEditor`)
+- **Editor mode** — drag to reparent, vacant roles, undo/redo, delete, field inspector (`useOrgChartEditor`)
 
 ## Density variants
 

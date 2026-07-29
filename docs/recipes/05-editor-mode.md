@@ -26,6 +26,7 @@ export function EditableOrg() {
           onReparent: editor.reparent,
           onAddVacant: editor.addVacant,
           onRemove: editor.remove,
+          onUpdate: editor.update,
           onUndo: editor.undo,
           onRedo: editor.redo,
           canUndo: editor.canUndo,
@@ -46,6 +47,7 @@ export function EditableOrg() {
 | **Undo / Redo** | Toolbar buttons or `⌘Z` / `⌘⇧Z` (`Ctrl` on Windows) |
 | **Add vacant** | Toolbar **+ Vacant role** (prompts for title; parents under selection or root) |
 | **Remove** | Select a node → **Remove** or `Delete` / `Backspace`. Children reparent to the removed node’s manager. |
+| **Edit fields** | Select a node → **Inspector** panel (name, title, email, location, department, badges). **Apply changes**. |
 
 ## Pure mutations (framework-agnostic)
 
@@ -54,6 +56,7 @@ Also available from `@canvas/core` for non-React hosts:
 - `reparentEmployee(employees, id, newManagerId)`
 - `addVacantRole(employees, { title, managerId, ... })`
 - `removeEmployee(employees, id)`
+- `updateEmployee(employees, id, patch)` — pass `null` to clear optional fields
 
 Each returns `{ ok: true, employees }` or `{ ok: false, error }`.
 

@@ -30,4 +30,5 @@ export {
   type UseOrgChartEditorOptions,
 } from "./hooks/useOrgChartEditor.js";
 export { EditorToolbar, type EditorToolbarProps } from "./controls/EditorToolbar.js";
+export { InspectorPanel, type InspectorPanelProps } from "./controls/InspectorPanel.js";
 export type { OrgChartEditorApi } from "./OrgChart.js";

@@ -1,8 +1,9 @@
-import type { AddVacantRoleInput, Employee } from "@canvas/core";
+import type { AddVacantRoleInput, Employee, EmployeePatch } from "@canvas/core";
 import {
   addVacantRole as applyAddVacant,
   removeEmployee as applyRemove,
   reparentEmployee as applyReparent,
+  updateEmployee as applyUpdate,
 } from "@canvas/core";
 import { useCallback, useMemo, useState } from "react";
 
@@ -22,6 +23,7 @@ export type UseOrgChartEditor = {
   reparent: (employeeId: string, newManagerId: string | null) => boolean;
   addVacant: (input: AddVacantRoleInput) => boolean;
   remove: (employeeId: string) => boolean;
+  update: (employeeId: string, patch: EmployeePatch) => boolean;
   undo: () => void;
   redo: () => void;
   /** Replace present state and push history (e.g. bulk import). */
@@ -99,6 +101,21 @@ export function useOrgChartEditor({
     [present, commit],
   );
 
+  const update = useCallback(
+    (employeeId: string, patch: EmployeePatch): boolean => {
+      const result = applyUpdate(present, employeeId, patch);
+      if (!result.ok) {
+        setLastError(result.error);
+        return false;
+      }
+      if (sameData(present, result.employees)) return true;
+      setLastError(null);
+      commit(result.employees);
+      return true;
+    },
+    [present, commit],
+  );
+
   const undo = useCallback(() => {
     setPast((p) => {
       if (p.length === 0) return p;
@@ -144,6 +161,7 @@ export function useOrgChartEditor({
       reparent,
       addVacant,
       remove,
+      update,
       undo,
       redo,
       replace,
@@ -157,6 +175,7 @@ export function useOrgChartEditor({
       reparent,
       addVacant,
       remove,
+      update,
       undo,
       redo,
       replace,

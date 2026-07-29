@@ -81,8 +81,8 @@ export function App(): ReactElement {
             background: "var(--canvas-selection-bg)",
           }}
         >
-          Edit mode: drag a person onto a new manager to reparent · toolbar for undo/redo/vacant ·
-          Delete removes selection
+          Edit mode: drag onto a manager to reparent · select to open inspector · toolbar for
+          undo/redo/vacant · Delete removes selection
         </p>
       ) : null}
       <div style={{ flex: 1, minHeight: 0 }}>
@@ -99,6 +99,7 @@ export function App(): ReactElement {
                   onReparent: editor.reparent,
                   onAddVacant: editor.addVacant,
                   onRemove: editor.remove,
+                  onUpdate: editor.update,
                   onUndo: editor.undo,
                   onRedo: editor.redo,
                   canUndo: editor.canUndo,

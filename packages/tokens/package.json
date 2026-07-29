@@ -1,6 +1,6 @@
 {
   "name": "@canvas/tokens",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "CSS variables and Tailwind preset for the canvas library.",
   "license": "MIT",
   "type": "module",
@@ -11,7 +11,9 @@
     "./variables.css": "./src/variables.css",
     "./tailwind": "./src/tailwind.ts"
   },
-  "files": ["src"],
+  "files": [
+    "src"
+  ],
   "devDependencies": {
     "tailwindcss": "^3.4.0"
   }

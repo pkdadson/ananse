@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { addVacantRole, removeEmployee, reparentEmployee } from "../src/edit/mutations.js";
+import {
+  addVacantRole,
+  removeEmployee,
+  reparentEmployee,
+  updateEmployee,
+} from "../src/edit/mutations.js";
 import type { Employee } from "../src/types.js";
 
 const base: Employee[] = [
@@ -61,5 +66,41 @@ describe("removeEmployee", () => {
     if (!result.ok) return;
     expect(result.employees.find((e) => e.id === "mgr")).toBeUndefined();
     expect(result.employees.find((e) => e.id === "ic")?.managerId).toBe("vp");
+  });
+});
+
+describe("updateEmployee", () => {
+  it("patches name and email", () => {
+    const result = updateEmployee(base, "ic", {
+      name: "Staff Engineer",
+      email: "ic@example.com",
+      title: "IC",
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.employees.find((e) => e.id === "ic")).toMatchObject({
+      name: "Staff Engineer",
+      email: "ic@example.com",
+      title: "IC",
+      managerId: "mgr",
+    });
+  });
+
+  it("clears optional fields with null", () => {
+    const withEmail: Employee[] = [
+      ...base.slice(0, 3),
+      { id: "ic", name: "IC", managerId: "mgr", email: "ic@example.com", workMode: "remote" },
+    ];
+    const result = updateEmployee(withEmail, "ic", { email: null, workMode: null });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const ic = result.employees.find((e) => e.id === "ic");
+    expect(ic?.email).toBeUndefined();
+    expect(ic?.workMode).toBeUndefined();
+  });
+
+  it("rejects empty name", () => {
+    const result = updateEmployee(base, "ic", { name: "  " });
+    expect(result.ok).toBe(false);
   });
 });

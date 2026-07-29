@@ -1,5 +1,5 @@
 import { getDescendants, getDirectReports } from "../tree/traverse.js";
-import type { Employee } from "../types.js";
+import type { Employee, EmploymentType, WorkMode } from "../types.js";
 
 export type MutationResult = { ok: true; employees: Employee[] } | { ok: false; error: string };
 
@@ -107,7 +107,6 @@ export function removeEmployee(employees: Employee[], employeeId: string): Mutat
       if (!reportIds.has(e.id)) return e;
       return { ...e, managerId: parentId };
     })
-    // Drop dangling dotted-line refs to the removed id
     .map((e) => {
       if (!e.dottedLineManagerIds?.includes(employeeId)) return e;
       const dotted = e.dottedLineManagerIds.filter((id) => id !== employeeId);
@@ -117,6 +116,113 @@ export function removeEmployee(employees: Employee[], employeeId: string): Mutat
     });
 
   return { ok: true, employees: next };
+}
+
+/**
+ * Patch editable fields on an employee. Does not change id or managerId
+ * (use reparentEmployee for reporting lines).
+ * Pass `null` to clear an optional field.
+ */
+export type EmployeePatch = {
+  name?: string;
+  title?: string | null;
+  email?: string | null;
+  location?: string | null;
+  department?: string | null;
+  photoUrl?: string | null;
+  tenureYears?: number | null;
+  employmentType?: EmploymentType | null;
+  workMode?: WorkMode | null;
+};
+
+export function updateEmployee(
+  employees: Employee[],
+  employeeId: string,
+  patch: EmployeePatch,
+): MutationResult {
+  const subject = employees.find((e) => e.id === employeeId);
+  if (!subject) {
+    return { ok: false, error: `Unknown employee id: ${employeeId}` };
+  }
+
+  if (patch.name !== undefined && patch.name.trim() === "") {
+    return { ok: false, error: "Name cannot be empty" };
+  }
+
+  if (patch.tenureYears !== undefined && patch.tenureYears !== null) {
+    if (!Number.isFinite(patch.tenureYears) || patch.tenureYears < 0) {
+      return { ok: false, error: "tenureYears must be a non-negative number" };
+    }
+  }
+
+  const next = cloneEmployees(employees).map((e) => {
+    if (e.id !== employeeId) return e;
+    return applyPatch(e, patch);
+  });
+
+  return { ok: true, employees: next };
+}
+
+function applyPatch(employee: Employee, patch: EmployeePatch): Employee {
+  const result: Employee = {
+    id: employee.id,
+    name: patch.name !== undefined ? patch.name.trim() : employee.name,
+  };
+
+  // Carry manager / structure fields unchanged
+  if (employee.managerId !== undefined) result.managerId = employee.managerId;
+  if (employee.dottedLineManagerIds !== undefined) {
+    result.dottedLineManagerIds = [...employee.dottedLineManagerIds];
+  }
+  if (employee.meta !== undefined) result.meta = { ...employee.meta };
+
+  setStringField(result, "title", pickString(employee.title, patch.title));
+  setStringField(result, "email", pickString(employee.email, patch.email));
+  setStringField(result, "location", pickString(employee.location, patch.location));
+  setStringField(result, "department", pickString(employee.department, patch.department));
+  setStringField(result, "photoUrl", pickString(employee.photoUrl, patch.photoUrl));
+
+  const tenure = pickClearable(employee.tenureYears, patch.tenureYears);
+  if (tenure !== undefined) result.tenureYears = tenure;
+
+  const employmentType = pickClearable(employee.employmentType, patch.employmentType);
+  if (employmentType !== undefined) result.employmentType = employmentType;
+
+  const workMode = pickClearable(employee.workMode, patch.workMode);
+  if (workMode !== undefined) result.workMode = workMode;
+
+  if (result.meta?.role === "vacant" && patch.title !== undefined) {
+    const title =
+      patch.title === null || patch.title.trim() === "" ? "Open Role" : patch.title.trim();
+    result.title = title;
+    result.meta = { ...result.meta, title };
+  }
+
+  return result;
+}
+
+/** undefined patch → keep current; null → clear; string → set */
+function pickString(
+  current: string | undefined,
+  patch: string | null | undefined,
+): string | undefined {
+  if (patch === undefined) return current;
+  if (patch === null || patch.trim() === "") return undefined;
+  return patch.trim();
+}
+
+function pickClearable<T>(current: T | undefined, patch: T | null | undefined): T | undefined {
+  if (patch === undefined) return current;
+  if (patch === null) return undefined;
+  return patch;
+}
+
+function setStringField(
+  target: Employee,
+  key: "title" | "email" | "location" | "department" | "photoUrl",
+  value: string | undefined,
+): void {
+  if (value !== undefined) target[key] = value;
 }
 
 function cryptoRandomId(): string {

@@ -64,4 +64,17 @@ describe("useOrgChartEditor", () => {
     expect(result.current.data.find((e) => e.id === "vp")).toBeUndefined();
     expect(result.current.data.find((e) => e.id === "ic")?.managerId).toBe("ceo");
   });
+
+  it("updates employee fields", () => {
+    const { result } = renderHook(() => useOrgChartEditor({ initialData: initial }));
+    act(() => {
+      expect(result.current.update("ic", { email: "ic@example.com", title: "Engineer" })).toBe(
+        true,
+      );
+    });
+    expect(result.current.data.find((e) => e.id === "ic")).toMatchObject({
+      email: "ic@example.com",
+      title: "Engineer",
+    });
+  });
 });

@@ -1,6 +1,6 @@
 {
   "name": "@canvas/react",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "React bindings for the canvas library: OrgChart, MindMap, FlowBuilder.",
   "license": "MIT",
   "type": "module",
@@ -14,8 +14,12 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist"],
-  "publishConfig": { "access": "public" },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
