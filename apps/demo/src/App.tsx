@@ -223,8 +223,8 @@ export function App(): ReactElement {
             background: "hsl(221 83% 96%)",
           }}
         >
-          Edit mode: drag onto a manager to reparent · select to open inspector · toolbar for
-          undo/redo/vacant · Delete removes selection
+          Edit mode: drag a card onto another person to reparent · drop on empty space snaps back ·
+          select for inspector · Undo/Redo/Vacant in toolbar · Delete removes selection
         </p>
       ) : null}
       <div style={{ flex: 1, minHeight: 0 }}>

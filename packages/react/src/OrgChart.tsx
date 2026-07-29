@@ -17,6 +17,8 @@ import {
   Position,
   ReactFlow,
   ReactFlowProvider,
+  useEdgesState,
+  useNodesState,
   useReactFlow,
 } from "@xyflow/react";
 import { type ReactElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -287,75 +289,105 @@ function OrgChartInner({
     [visibleData, layoutOptions],
   );
 
-  const rfNodes: Node[] = useMemo(
-    () =>
-      layout.nodes.map((n) => {
-        const reportCount = getDirectReports(data, n.id).length;
-        const isManager = reportCount > 0;
-        const type = pickNodeType(n.data, isManager);
-        const collapsed = isCollapsed(n.id);
-        const isSearchActive = query.trim().length > 0;
-        const isFocusActive = focusedIds.size > 0;
+  // Structural nodes only (no selection/search/focus) — safe to rebuild without killing drag.
+  const layoutNodes = useMemo((): Node[] => {
+    return layout.nodes.map((n) => {
+      const reportCount = getDirectReports(data, n.id).length;
+      const isManager = reportCount > 0;
+      const type = pickNodeType(n.data, isManager);
+      const collapsed = isCollapsed(n.id);
+      return {
+        id: n.id,
+        type,
+        position: n.position,
+        width: n.size.width,
+        height: n.size.height,
+        sourcePosition: Position.Bottom,
+        targetPosition: Position.Top,
+        draggable: isEdit,
+        selectable: true,
+        selected: false,
+        style: {
+          pointerEvents: "all" as const,
+          zIndex: 1,
+          cursor: isEdit ? "grab" : "pointer",
+        },
+        data: {
+          employee: n.data,
+          title:
+            typeof n.data.meta?.title === "string"
+              ? (n.data.meta.title as string)
+              : (n.data.title ?? "Open Role"),
+          department: n.data.department,
+          directReportCount: reportCount,
+          collapsed,
+          onToggleCollapse: () => toggleCollapse(n.id),
+          searchDim: false,
+          focusDim: false,
+          nodeVariant,
+        } satisfies OrgChartNodeData,
+      };
+    });
+  }, [layout.nodes, data, isCollapsed, toggleCollapse, nodeVariant, isEdit]);
+
+  const layoutEdges = useMemo((): Edge[] => {
+    return layout.edges.map((e) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      type: e.kind,
+      sourceHandle: null,
+      targetHandle: null,
+    }));
+  }, [layout.edges]);
+
+  // Interactive RF state — required so drag positions aren't reset every render.
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+
+  // Full replace when hierarchy / collapse / density / edit mode changes
+  useEffect(() => {
+    setNodes(layoutNodes);
+    setEdges(layoutEdges);
+  }, [layoutNodes, layoutEdges, setNodes, setEdges]);
+
+  // Soft patch: selection + dim without resetting drag positions
+  useEffect(() => {
+    const isSearchActive = query.trim().length > 0;
+    const isFocusActive = focusedIds.size > 0;
+    setNodes((prev) => {
+      if (prev.length === 0) return prev;
+      return prev.map((n) => {
         const searchDim = isSearchActive && !matchIds.has(n.id);
         const focusDim = isFocusActive && !focusedIds.has(n.id);
+        const prevData = n.data as OrgChartNodeData;
+        if (
+          n.selected === (selectedId === n.id) &&
+          prevData.searchDim === searchDim &&
+          prevData.focusDim === focusDim
+        ) {
+          return n;
+        }
         return {
-          id: n.id,
-          type,
-          position: n.position,
-          width: n.size.width,
-          height: n.size.height,
-          sourcePosition: Position.Bottom,
-          targetPosition: Position.Top,
-          draggable: isEdit,
-          selectable: true,
+          ...n,
           selected: selectedId === n.id,
-          style: { pointerEvents: "all", zIndex: 1 },
-          data: {
-            employee: n.data,
-            title:
-              typeof n.data.meta?.title === "string"
-                ? (n.data.meta.title as string)
-                : (n.data.title ?? "Open Role"),
-            department: n.data.department,
-            directReportCount: reportCount,
-            collapsed,
-            onToggleCollapse: () => toggleCollapse(n.id),
-            searchDim,
-            focusDim,
-            nodeVariant,
-          } satisfies OrgChartNodeData,
+          data: { ...prevData, searchDim, focusDim },
         };
-      }),
-    [
-      layout.nodes,
-      data,
-      isCollapsed,
-      toggleCollapse,
-      query,
-      matchIds,
-      focusedIds,
-      nodeVariant,
-      isEdit,
-      selectedId,
-    ],
-  );
+      });
+    });
+  }, [selectedId, query, matchIds, focusedIds, setNodes]);
 
-  const rfEdges: Edge[] = useMemo(
-    () =>
-      layout.edges.map((e) => ({
-        id: e.id,
-        source: e.source,
-        target: e.target,
-        type: e.kind,
-        sourceHandle: null,
-        targetHandle: null,
-      })),
-    [layout.edges],
-  );
+  const snapNodesToLayout = useCallback(() => {
+    setNodes(layoutNodes);
+    setEdges(layoutEdges);
+  }, [layoutNodes, layoutEdges, setNodes, setEdges]);
 
   const onNodeDragStop: OnNodeDrag = useCallback(
     (event, node) => {
-      if (!isEdit || !editor) return;
+      if (!isEdit || !editor) {
+        snapNodesToLayout();
+        return;
+      }
       const point =
         "clientX" in event
           ? { x: event.clientX, y: event.clientY }
@@ -364,14 +396,21 @@ function OrgChartInner({
               y: event.changedTouches?.[0]?.clientY ?? 0,
             };
       const flow = screenToFlowPosition(point);
-      const nodes = getNodes();
-      const targetId = findDropTargetId(node.id, flow.x, flow.y, nodes, data, node.position);
+      const currentNodes = getNodes();
+      const targetId = findDropTargetId(node.id, flow.x, flow.y, currentNodes, data, node.position);
       if (targetId) {
-        editor.onReparent(node.id, targetId);
+        const ok = editor.onReparent(node.id, targetId);
+        // If reparent rejected (cycle etc.), snap back to layout positions.
+        if (ok === false) {
+          snapNodesToLayout();
+        }
+        // If ok/undefined, data change will rebuild via structureKey.
+      } else {
+        // No target — free move not kept; snap back to dagre layout.
+        snapNodesToLayout();
       }
-      // Empty canvas drop: layout snaps back from data-driven positions on next render.
     },
-    [isEdit, editor, screenToFlowPosition, getNodes, data],
+    [isEdit, editor, screenToFlowPosition, getNodes, data, snapNodesToLayout],
   );
 
   const handleAddVacant = useCallback(() => {
@@ -434,14 +473,17 @@ function OrgChartInner({
         </div>
       ) : null}
       <ReactFlow
-        nodes={rfNodes}
-        edges={rfEdges}
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         nodesDraggable={isEdit}
         nodesConnectable={false}
         elementsSelectable
         nodesFocusable
+        selectNodesOnDrag={false}
         onNodeClick={(_, node) => {
           setFocus(node.id);
           setSelectedId(node.id);
