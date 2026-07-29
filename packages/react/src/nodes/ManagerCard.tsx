@@ -1,12 +1,13 @@
 import type { Employee } from "@canvas/core";
 import type { ReactElement } from "react";
-import { EmployeeCard } from "./EmployeeCard.js";
+import { EmployeeFace, type NodeVariant } from "./employeeFace.js";
 
 export type ManagerCardProps = {
   data: Employee;
   directReportCount: number;
   collapsed: boolean;
   onToggleCollapse: () => void;
+  variant?: NodeVariant;
 };
 
 function reportsLabel(count: number): string {
@@ -18,10 +19,11 @@ export function ManagerCard({
   directReportCount,
   collapsed,
   onToggleCollapse,
+  variant = "default",
 }: ManagerCardProps): ReactElement {
   return (
     <div className="flex flex-col gap-2" style={{ pointerEvents: "all" }}>
-      <EmployeeCard data={data} />
+      <EmployeeFace data={data} variant={variant} />
       <div className="flex items-center justify-between rounded-md bg-canvas-selection px-2 py-1 text-xs text-canvas-node-text">
         <span>{reportsLabel(directReportCount)}</span>
         <button

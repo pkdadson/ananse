@@ -1,17 +1,20 @@
 import type { Employee } from "@canvas/core";
 import type { ReactElement } from "react";
-import { EmployeeCard } from "./EmployeeCard.js";
+import { EmployeeFace, type NodeVariant } from "./employeeFace.js";
 
-export type ExecutiveCardProps = { data: Employee };
+export type ExecutiveCardProps = {
+  data: Employee;
+  variant?: NodeVariant;
+};
 
-export function ExecutiveCard({ data }: ExecutiveCardProps): ReactElement {
+export function ExecutiveCard({ data, variant = "default" }: ExecutiveCardProps): ReactElement {
   return (
     <div
       data-canvas-role="executive"
       className="rounded-canvas-node border-2 shadow-canvas-executive"
       style={{ borderColor: "var(--canvas-role-executive-border)" }}
     >
-      <EmployeeCard data={data} />
+      <EmployeeFace data={data} variant={variant} />
     </div>
   );
 }
