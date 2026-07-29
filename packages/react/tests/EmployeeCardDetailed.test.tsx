@@ -22,9 +22,7 @@ describe("EmployeeCardDetailed", () => {
   });
 
   it("shows badges when workMode set", () => {
-    render(
-      <EmployeeCardDetailed data={{ id: "1", name: "Ada", workMode: "remote" }} />,
-    );
+    render(<EmployeeCardDetailed data={{ id: "1", name: "Ada", workMode: "remote" }} />);
     expect(screen.getByText(/remote/i)).toBeInTheDocument();
   });
 });

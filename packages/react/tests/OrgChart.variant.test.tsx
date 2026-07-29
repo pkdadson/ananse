@@ -1,6 +1,6 @@
+import type { Employee } from "@canvas/core";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import type { Employee } from "@canvas/core";
 import { OrgChart } from "../src/OrgChart.js";
 
 const data: Employee[] = [

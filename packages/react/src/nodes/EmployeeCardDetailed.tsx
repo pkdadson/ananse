@@ -14,7 +14,11 @@ export function EmployeeCardDetailed({ data }: EmployeeCardDetailedProps): React
     >
       <div className="flex items-center gap-3">
         {data.photoUrl ? (
-          <img src={data.photoUrl} alt={data.name} className="h-10 w-10 rounded-full object-cover" />
+          <img
+            src={data.photoUrl}
+            alt={data.name}
+            className="h-10 w-10 rounded-full object-cover"
+          />
         ) : (
           <div
             aria-hidden="true"

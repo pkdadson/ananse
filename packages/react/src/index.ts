@@ -13,7 +13,7 @@ export {
   type EmployeeCardMinimalProps,
 } from "./nodes/EmployeeCardMinimal.js";
 export { EmployeeBadges, type EmployeeBadgesProps } from "./nodes/EmployeeBadges.js";
-export { type NodeVariant } from "./nodes/employeeFace.js";
+export type { NodeVariant } from "./nodes/employeeFace.js";
 export { ManagerCard, type ManagerCardProps } from "./nodes/ManagerCard.js";
 export { ExecutiveCard, type ExecutiveCardProps } from "./nodes/ExecutiveCard.js";
 export { VacantRoleCard, type VacantRoleCardProps } from "./nodes/VacantRoleCard.js";

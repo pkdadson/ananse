@@ -20,11 +20,11 @@ import { useFocusMode } from "./hooks/useFocusMode.js";
 import { useKeyboardNav } from "./hooks/useKeyboardNav.js";
 import { useOrgChartState } from "./hooks/useOrgChartState.js";
 import { useSearch } from "./hooks/useSearch.js";
-import { EmployeeFace, type NodeVariant } from "./nodes/employeeFace.js";
 import { ExecutiveCard } from "./nodes/ExecutiveCard.js";
 import { ManagerCard } from "./nodes/ManagerCard.js";
 import { NodeShell } from "./nodes/NodeShell.js";
 import { VacantRoleCard } from "./nodes/VacantRoleCard.js";
+import { EmployeeFace, type NodeVariant } from "./nodes/employeeFace.js";
 
 export type OrgChartNodeData = {
   employee: Employee;
@@ -143,9 +143,8 @@ function OrgChartInner({
         return;
       }
       if (event.key === "/" && showSearch && !isEditableTarget(event.target)) {
-        const input = containerRef.current?.querySelector<HTMLInputElement>(
-          'input[role="searchbox"]',
-        );
+        const input =
+          containerRef.current?.querySelector<HTMLInputElement>('input[role="searchbox"]');
         if (input) {
           event.preventDefault();
           input.focus();
