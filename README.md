@@ -11,7 +11,7 @@ Canvas is a design-forward org-chart kit for React. It packages layout, search, 
 | You design node cards, edges, collapse, search, and focus yourself | `OrgChart` ships with those behaviors |
 | Layout and tree math are DIY | `@canvas/core` provides dagre org layout + tree utils |
 | Tokens and densities are ad hoc | Built-in densities and badge chips via design tokens |
-| Data is free-form | Typed `Employee` model + Zod schemas |
+| Data is free-form | Typed `Employee` model + Zod schemas + CSV/HRIS adapters |
 
 Use React Flow when you need a custom graph editor. Use Canvas when you need an **org chart that looks finished on day one**.
 
@@ -60,6 +60,7 @@ The chart container needs an explicit height (e.g. `100vh` or a flex child with 
 - **Minimap & controls** — optional, toggle via props
 - **Densities** — `default` | `detailed` | `compact` | `minimal`
 - **Badges** — work mode, employment type, tenure chips on detailed cards
+- **Data adapters** — `parseEmployeesCsv`, `fromHrisJson`, `fromNestedTree` in `@canvas/core`
 
 ## Density variants
 
@@ -86,21 +87,23 @@ pnpm dev:demo
 - [Quickstart](docs/recipes/01-quickstart.md)
 - [Themed org chart](docs/recipes/02-themed-org-chart.md)
 - [Density and badges](docs/recipes/03-density-and-badges.md)
+- [Import CSV & HRIS](docs/recipes/04-import-csv-and-hris.md)
 
 ## Packages
 
 | Package | Role |
 |---------|------|
-| [`@canvas/core`](packages/core) | Types, Zod schemas, org layout, tree/search utils |
+| [`@canvas/core`](packages/core) | Types, Zod schemas, layout, tree/search, CSV/HRIS adapters |
 | [`@canvas/react`](packages/react) | `OrgChart`, cards, edges, hooks |
 | [`@canvas/tokens`](packages/tokens) | CSS variables + Tailwind preset |
 
 ## Roadmap
 
-Planned after v0.1 (not included yet):
+Shipped: install docs, density kit, CSV/HRIS adapters.
 
-- CSV / HRIS data adapters
-- In-product org chart editor
+Planned next:
+
+- In-product org chart editor (reparent, vacant roles, undo)
 
 ## License
 

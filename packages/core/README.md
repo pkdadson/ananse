@@ -39,6 +39,22 @@ const parsed = orgChartSchema.safeParse(rawRows);
 - `getDirectReports`, traversal helpers
 - `searchEmployees` — match name, title, department, email, location
 
+### Data adapters
+
+- `parseEmployeesCsv(csv)` — spreadsheet → `Employee[]` (+ warnings)
+- `fromHrisJson(records)` — flat HRIS JSON with field aliases
+- `fromNestedTree(roots)` — nested `children`/`reports` → flat `managerId` graph
+
+```ts
+import { parseEmployeesCsv, fromHrisJson, fromNestedTree } from "@canvas/core";
+
+const { employees } = parseEmployeesCsv(csvText);
+// or fromHrisJson(await res.json())
+// or fromNestedTree([rootNode])
+```
+
+See [recipe 04](../../docs/recipes/04-import-csv-and-hris.md).
+
 ## Example
 
 ```ts
