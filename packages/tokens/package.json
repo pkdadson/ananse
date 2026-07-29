@@ -11,9 +11,7 @@
     "./variables.css": "./src/variables.css",
     "./tailwind": "./src/tailwind.ts"
   },
-  "files": [
-    "src"
-  ],
+  "files": ["src"],
   "devDependencies": {
     "tailwindcss": "^3.4.0"
   }
