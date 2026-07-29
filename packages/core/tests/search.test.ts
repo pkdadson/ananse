@@ -32,4 +32,20 @@ describe("searchEmployees", () => {
   it("returns empty for blank query", () => {
     expect(searchEmployees(employees, "   ")).toEqual([]);
   });
+
+  it("matches by email", () => {
+    const employees: Employee[] = [
+      { id: "1", name: "Ada", email: "ada@example.com" },
+      { id: "2", name: "Grace", email: "grace@example.com" },
+    ];
+    expect(searchEmployees(employees, "ada@").map((e) => e.id)).toEqual(["1"]);
+  });
+
+  it("matches by location", () => {
+    const employees: Employee[] = [
+      { id: "1", name: "Ada", location: "London" },
+      { id: "2", name: "Grace", location: "New York" },
+    ];
+    expect(searchEmployees(employees, "york").map((e) => e.id)).toEqual(["2"]);
+  });
 });
