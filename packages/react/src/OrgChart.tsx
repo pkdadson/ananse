@@ -1,8 +1,11 @@
 import {
+  Background,
   Controls,
   type Edge,
   MiniMap,
   type Node,
+  type NodeProps,
+  Position,
   ReactFlow,
   ReactFlowProvider,
 } from "@xyflow/react";
@@ -20,9 +23,10 @@ import { useSearch } from "./hooks/useSearch.js";
 import { EmployeeCard } from "./nodes/EmployeeCard.js";
 import { ExecutiveCard } from "./nodes/ExecutiveCard.js";
 import { ManagerCard } from "./nodes/ManagerCard.js";
+import { NodeShell } from "./nodes/NodeShell.js";
 import { VacantRoleCard } from "./nodes/VacantRoleCard.js";
 
-type NodeData = {
+export type OrgChartNodeData = {
   employee: Employee;
   title: string;
   department?: string | undefined;
@@ -33,46 +37,55 @@ type NodeData = {
   focusDim: boolean;
 };
 
-function wrapDim(children: ReactElement, dim: boolean, isSearchDim: boolean): ReactElement {
+function EmployeeNode({ data }: NodeProps & { data: OrgChartNodeData }): ReactElement {
+  const dim = data.searchDim || data.focusDim;
   return (
-    <div
-      data-canvas-search-dim={isSearchDim ? "true" : "false"}
-      style={{ opacity: dim ? 0.3 : 1, transition: "opacity 150ms ease" }}
-    >
-      {children}
-    </div>
+    <NodeShell searchDim={data.searchDim} dim={dim}>
+      <EmployeeCard data={data.employee} />
+    </NodeShell>
   );
 }
 
-const nodeTypes = {
-  employee: ({ data }: { data: NodeData }) =>
-    wrapDim(<EmployeeCard data={data.employee} />, data.searchDim || data.focusDim, data.searchDim),
-  executive: ({ data }: { data: NodeData }) =>
-    wrapDim(
-      <ExecutiveCard data={data.employee} />,
-      data.searchDim || data.focusDim,
-      data.searchDim,
-    ),
-  vacant: ({ data }: { data: NodeData }) =>
-    wrapDim(
+function ExecutiveNode({ data }: NodeProps & { data: OrgChartNodeData }): ReactElement {
+  const dim = data.searchDim || data.focusDim;
+  return (
+    <NodeShell searchDim={data.searchDim} dim={dim}>
+      <ExecutiveCard data={data.employee} />
+    </NodeShell>
+  );
+}
+
+function VacantNode({ data }: NodeProps & { data: OrgChartNodeData }): ReactElement {
+  const dim = data.searchDim || data.focusDim;
+  return (
+    <NodeShell searchDim={data.searchDim} dim={dim}>
       <VacantRoleCard
         title={data.title}
         {...(data.department !== undefined ? { department: data.department } : {})}
-      />,
-      data.searchDim || data.focusDim,
-      data.searchDim,
-    ),
-  manager: ({ data }: { data: NodeData }) =>
-    wrapDim(
+      />
+    </NodeShell>
+  );
+}
+
+function ManagerNode({ data }: NodeProps & { data: OrgChartNodeData }): ReactElement {
+  const dim = data.searchDim || data.focusDim;
+  return (
+    <NodeShell searchDim={data.searchDim} dim={dim}>
       <ManagerCard
         data={data.employee}
         directReportCount={data.directReportCount}
         collapsed={data.collapsed}
         onToggleCollapse={data.onToggleCollapse}
-      />,
-      data.searchDim || data.focusDim,
-      data.searchDim,
-    ),
+      />
+    </NodeShell>
+  );
+}
+
+const nodeTypes = {
+  employee: EmployeeNode,
+  executive: ExecutiveNode,
+  vacant: VacantNode,
+  manager: ManagerNode,
 };
 
 const edgeTypes = { solid: SolidEdge, dotted: DottedEdge };
@@ -132,8 +145,12 @@ function OrgChartInner({
           id: n.id,
           type,
           position: n.position,
+          sourcePosition: Position.Bottom,
+          targetPosition: Position.Top,
           draggable: false,
-          selectable: mode === "edit",
+          selectable: true,
+          // Keep nodes above the pan pane for hit-testing interactive controls.
+          style: { pointerEvents: "all", zIndex: 1 },
           data: {
             employee: n.data,
             title:
@@ -146,10 +163,10 @@ function OrgChartInner({
             onToggleCollapse: () => toggleCollapse(n.id),
             searchDim,
             focusDim,
-          } satisfies NodeData,
+          } satisfies OrgChartNodeData,
         };
       }),
-    [layout.nodes, data, isCollapsed, toggleCollapse, mode, query, matchIds, focusedIds],
+    [layout.nodes, data, isCollapsed, toggleCollapse, query, matchIds, focusedIds],
   );
 
   const rfEdges: Edge[] = useMemo(
@@ -159,6 +176,9 @@ function OrgChartInner({
         source: e.source,
         target: e.target,
         type: e.kind,
+        // Smooth-step edges attach top/bottom handles.
+        sourceHandle: null,
+        targetHandle: null,
       })),
     [layout.edges],
   );
@@ -178,11 +198,28 @@ function OrgChartInner({
         nodesDraggable={false}
         nodesConnectable={false}
         elementsSelectable={mode === "edit"}
+        // Nodes stay interactive for collapse buttons even in view mode.
+        nodesFocusable
         fitView
+        minZoom={0.2}
+        maxZoom={2}
         proOptions={{ hideAttribution: true }}
+        defaultEdgeOptions={{
+          type: "solid",
+          style: { stroke: "var(--canvas-edge-color)", strokeWidth: 1.5 },
+        }}
       >
+        <Background gap={20} size={1} color="var(--canvas-node-border)" />
         {showControls ? <Controls showInteractive={false} /> : null}
-        {showMinimap ? <MiniMap pannable zoomable /> : null}
+        {showMinimap ? (
+          <MiniMap
+            pannable
+            zoomable
+            nodeStrokeWidth={2}
+            nodeColor="var(--canvas-node-border)"
+            maskColor="rgb(240, 240, 245, 0.7)"
+          />
+        ) : null}
       </ReactFlow>
     </div>
   );

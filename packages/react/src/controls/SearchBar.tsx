@@ -8,8 +8,10 @@ export type SearchBarProps = {
 export function SearchBar({ value, onChange }: SearchBarProps): ReactElement {
   return (
     <div className="pointer-events-auto flex items-center gap-1 rounded-md border border-canvas-node-border bg-canvas-node px-2 py-1 shadow-canvas-node">
+      {/* type=text avoids the native WebKit clear control (double-× with our button) */}
       <input
-        type="search"
+        type="text"
+        role="searchbox"
         aria-label="Search org chart"
         placeholder="Search..."
         value={value}
@@ -21,7 +23,7 @@ export function SearchBar({ value, onChange }: SearchBarProps): ReactElement {
           type="button"
           aria-label="Clear search"
           onClick={() => onChange("")}
-          className="rounded p-1 text-canvas-node-text-muted hover:bg-canvas-selection"
+          className="nodrag nopan rounded p-1 text-canvas-node-text-muted hover:bg-canvas-selection"
         >
           ×
         </button>

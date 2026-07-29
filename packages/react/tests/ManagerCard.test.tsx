@@ -16,6 +16,18 @@ describe("ManagerCard", () => {
     expect(screen.getByText(/5 reports/i)).toBeInTheDocument();
   });
 
+  it('uses singular "report" when count is 1', () => {
+    render(
+      <ManagerCard
+        data={{ id: "1", name: "Grace" }}
+        directReportCount={1}
+        collapsed={false}
+        onToggleCollapse={() => {}}
+      />,
+    );
+    expect(screen.getByText("1 report")).toBeInTheDocument();
+  });
+
   it("invokes onToggleCollapse when the toggle is clicked", async () => {
     const onToggle = vi.fn();
     render(
