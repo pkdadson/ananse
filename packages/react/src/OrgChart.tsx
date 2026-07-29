@@ -297,9 +297,20 @@ function OrgChartInner({
 
   const visibleData = useMemo(() => data.filter((e) => visibleIds.has(e.id)), [data, visibleIds]);
 
+  /** Match dagre box sizes to card density so RF node clips don't cut content. */
+  const densityLayout = useMemo((): OrgChartLayoutOptions => {
+    const byVariant: Record<NodeVariant, OrgChartLayoutOptions> = {
+      default: { nodeWidth: 240, nodeHeight: 100, nodeSep: 40, rankSep: 72 },
+      detailed: { nodeWidth: 260, nodeHeight: 148, nodeSep: 36, rankSep: 80 },
+      compact: { nodeWidth: 188, nodeHeight: 56, nodeSep: 28, rankSep: 56 },
+      minimal: { nodeWidth: 148, nodeHeight: 40, nodeSep: 24, rankSep: 48 },
+    };
+    return { ...byVariant[nodeVariant], ...layoutOptions };
+  }, [nodeVariant, layoutOptions]);
+
   const layout: LayoutResult<Employee> = useMemo(
-    () => layoutOrgChart(visibleData, layoutOptions),
-    [visibleData, layoutOptions],
+    () => layoutOrgChart(visibleData, densityLayout),
+    [visibleData, densityLayout],
   );
 
   // Structural nodes only (no selection/search/focus) — safe to rebuild without killing drag.
@@ -366,14 +377,17 @@ function OrgChartInner({
     setEdges(layoutEdges);
   }, [layoutNodes, layoutEdges, setNodes, setEdges]);
 
-  // Soft patch: multi-select + dim without resetting drag positions
+  // Soft patch: multi-select + dim without resetting drag positions.
+  // Must return the same `prev` array when nothing changed — a new array from
+  // .map() retriggers RF selection → onSelectionChange → infinite update loop.
   useEffect(() => {
     const isSearchActive = query.trim().length > 0;
     const isFocusActive = focusedIds.size > 0;
     const selectedSet = new Set(selectedIds);
     setNodes((prev) => {
       if (prev.length === 0) return prev;
-      return prev.map((n) => {
+      let changed = false;
+      const next = prev.map((n) => {
         const searchDim = isSearchActive && !matchIds.has(n.id);
         const focusDim = isFocusActive && !focusedIds.has(n.id);
         const prevData = n.data as OrgChartNodeData;
@@ -385,12 +399,14 @@ function OrgChartInner({
         ) {
           return n;
         }
+        changed = true;
         return {
           ...n,
           selected,
           data: { ...prevData, searchDim, focusDim },
         };
       });
+      return changed ? next : prev;
     });
   }, [selectedIds, query, matchIds, focusedIds, setNodes]);
 
@@ -456,41 +472,54 @@ function OrgChartInner({
     <div ref={containerRef} style={{ position: "relative", width: "100%", height: "100%" }}>
       {showSearch ? (
         <div style={{ position: "absolute", top: 12, left: 12, zIndex: 10 }}>
-          <SearchBar value={query} onChange={setQuery} />
+          <SearchBar value={query} onChange={setQuery} matchCount={matchIds.size} />
         </div>
       ) : null}
       {isEdit && showEditorToolbar && editor ? (
-        <div style={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}>
-          <EditorToolbar
-            canUndo={Boolean(editor.canUndo)}
-            canRedo={Boolean(editor.canRedo)}
-            onUndo={() => {
-              editor.onUndo?.();
-            }}
-            onRedo={() => {
-              editor.onRedo?.();
-            }}
-            onAddVacant={handleAddVacant}
-            {...(editor.onRemove
-              ? {
-                  onRemoveSelected: () => {
-                    if (selectedIds.length === 0) return;
-                    for (const id of [...selectedIds].reverse()) {
-                      editor.onRemove?.(id);
-                    }
-                    setSelectedIds([]);
-                  },
-                }
-              : {})}
-            hasSelection={selectedIds.length > 0}
-            selectionCount={selectedIds.length}
-            onExportJson={() => {
-              void import("@canvas/core").then(({ downloadJson }) => {
-                downloadJson("org-chart.json", data);
-              });
-            }}
-            error={editor.lastError ?? null}
-          />
+        <div
+          style={{
+            position: "absolute",
+            top: showSearch ? 56 : 12,
+            left: 12,
+            right: 12,
+            zIndex: 10,
+            display: "flex",
+            justifyContent: "flex-end",
+            pointerEvents: "none",
+          }}
+        >
+          <div style={{ pointerEvents: "auto", maxWidth: "100%", overflowX: "auto" }}>
+            <EditorToolbar
+              canUndo={Boolean(editor.canUndo)}
+              canRedo={Boolean(editor.canRedo)}
+              onUndo={() => {
+                editor.onUndo?.();
+              }}
+              onRedo={() => {
+                editor.onRedo?.();
+              }}
+              onAddVacant={handleAddVacant}
+              {...(editor.onRemove
+                ? {
+                    onRemoveSelected: () => {
+                      if (selectedIds.length === 0) return;
+                      for (const id of [...selectedIds].reverse()) {
+                        editor.onRemove?.(id);
+                      }
+                      setSelectedIds([]);
+                    },
+                  }
+                : {})}
+              hasSelection={selectedIds.length > 0}
+              selectionCount={selectedIds.length}
+              onExportJson={() => {
+                void import("@canvas/core").then(({ downloadJson }) => {
+                  downloadJson("org-chart.json", data);
+                });
+              }}
+              error={editor.lastError ?? null}
+            />
+          </div>
         </div>
       ) : null}
       {isEdit &&
@@ -498,7 +527,7 @@ function OrgChartInner({
       editor?.onUpdate &&
       selectedEmployee &&
       selectedIds.length === 1 ? (
-        <div style={{ position: "absolute", top: 56, right: 12, zIndex: 10 }}>
+        <div style={{ position: "absolute", top: showSearch ? 100 : 56, right: 12, zIndex: 10 }}>
           <InspectorPanel
             employee={selectedEmployee}
             onChange={(patch) => {
@@ -534,10 +563,15 @@ function OrgChartInner({
         }}
         onSelectionChange={({ nodes: sel }) => {
           if (!isEdit) return;
-          // Keep multi-select from marquee in sync
-          if (sel.length > 1) {
-            setSelectedIds(sel.map((n) => n.id));
-          }
+          // Marquee multi-select → sync. Skip no-ops to avoid setState loops.
+          if (sel.length <= 1) return;
+          const ids = sel.map((n) => n.id);
+          setSelectedIds((prev) => {
+            if (prev.length === ids.length && prev.every((id, i) => id === ids[i])) return prev;
+            const prevSet = new Set(prev);
+            if (ids.length === prevSet.size && ids.every((id) => prevSet.has(id))) return prev;
+            return ids;
+          });
         }}
         onPaneClick={() => {
           clearFocus();

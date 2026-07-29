@@ -29,6 +29,14 @@ export function EditorToolbar({
     <div
       className="pointer-events-auto flex flex-wrap items-center gap-2 rounded-md border border-canvas-node-border bg-canvas-node px-2 py-1.5 shadow-canvas-node"
       data-canvas-editor-toolbar
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        maxWidth: "100%",
+      }}
     >
       <button
         type="button"
