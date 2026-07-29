@@ -233,6 +233,10 @@ function OrgChartInner({
   const { focusedIds, focusedId, setFocus, clearFocus } = useFocusMode(data);
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  /** Free-drag positions that override dagre until reparent or explicit reset. */
+  const [pinnedPositions, setPinnedPositions] = useState<Record<string, { x: number; y: number }>>(
+    {},
+  );
   const { screenToFlowPosition, getNodes } = useReactFlow();
   const selectedEmployee = useMemo(
     () => (selectedId ? (data.find((e) => e.id === selectedId) ?? null) : null),
@@ -290,16 +294,18 @@ function OrgChartInner({
   );
 
   // Structural nodes only (no selection/search/focus) — safe to rebuild without killing drag.
+  // pinnedPositions keep free-drag placements across rebuilds.
   const layoutNodes = useMemo((): Node[] => {
     return layout.nodes.map((n) => {
       const reportCount = getDirectReports(data, n.id).length;
       const isManager = reportCount > 0;
       const type = pickNodeType(n.data, isManager);
       const collapsed = isCollapsed(n.id);
+      const pinned = pinnedPositions[n.id];
       return {
         id: n.id,
         type,
-        position: n.position,
+        position: pinned ?? n.position,
         width: n.size.width,
         height: n.size.height,
         sourcePosition: Position.Bottom,
@@ -328,7 +334,7 @@ function OrgChartInner({
         } satisfies OrgChartNodeData,
       };
     });
-  }, [layout.nodes, data, isCollapsed, toggleCollapse, nodeVariant, isEdit]);
+  }, [layout.nodes, data, isCollapsed, toggleCollapse, nodeVariant, isEdit, pinnedPositions]);
 
   const layoutEdges = useMemo((): Edge[] => {
     return layout.edges.map((e) => ({
@@ -377,17 +383,10 @@ function OrgChartInner({
     });
   }, [selectedId, query, matchIds, focusedIds, setNodes]);
 
-  const snapNodesToLayout = useCallback(() => {
-    setNodes(layoutNodes);
-    setEdges(layoutEdges);
-  }, [layoutNodes, layoutEdges, setNodes, setEdges]);
-
   const onNodeDragStop: OnNodeDrag = useCallback(
     (event, node) => {
-      if (!isEdit || !editor) {
-        snapNodesToLayout();
-        return;
-      }
+      if (!isEdit || !editor) return;
+
       const point =
         "clientX" in event
           ? { x: event.clientX, y: event.clientY }
@@ -398,19 +397,34 @@ function OrgChartInner({
       const flow = screenToFlowPosition(point);
       const currentNodes = getNodes();
       const targetId = findDropTargetId(node.id, flow.x, flow.y, currentNodes, data, node.position);
+
       if (targetId) {
         const ok = editor.onReparent(node.id, targetId);
-        // If reparent rejected (cycle etc.), snap back to layout positions.
         if (ok === false) {
-          snapNodesToLayout();
+          // Reparent rejected (e.g. cycle) — keep free placement where the user left it.
+          setPinnedPositions((prev) => ({
+            ...prev,
+            [node.id]: { x: node.position.x, y: node.position.y },
+          }));
+          return;
         }
-        // If ok/undefined, data change will rebuild via structureKey.
-      } else {
-        // No target — free move not kept; snap back to dagre layout.
-        snapNodesToLayout();
+        // Successful reparent: clear pin so dagre can place the node in the new tree.
+        setPinnedPositions((prev) => {
+          if (!(node.id in prev)) return prev;
+          const next = { ...prev };
+          delete next[node.id];
+          return next;
+        });
+        return;
       }
+
+      // Free move: pin the drop position so it is not wiped by later layout rebuilds.
+      setPinnedPositions((prev) => ({
+        ...prev,
+        [node.id]: { x: node.position.x, y: node.position.y },
+      }));
     },
-    [isEdit, editor, screenToFlowPosition, getNodes, data, snapNodesToLayout],
+    [isEdit, editor, screenToFlowPosition, getNodes, data],
   );
 
   const handleAddVacant = useCallback(() => {

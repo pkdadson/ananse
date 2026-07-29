@@ -223,7 +223,7 @@ export function App(): ReactElement {
             background: "hsl(221 83% 96%)",
           }}
         >
-          Edit mode: drag a card onto another person to reparent · drop on empty space snaps back ·
+          Edit mode: drag cards freely (they stay put) · drop onto another person to reparent ·
           select for inspector · Undo/Redo/Vacant in toolbar · Delete removes selection
         </p>
       ) : null}
