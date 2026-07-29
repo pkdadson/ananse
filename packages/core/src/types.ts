@@ -19,6 +19,30 @@ export type Employee = {
 
 export type OrgChartData = Employee[];
 
+/** Mind-map node: tree rooted at a hub (parentId null = root). */
+export type MindNode = {
+  id: string;
+  label: string;
+  parentId?: string | null;
+  color?: string;
+  meta?: Record<string, unknown>;
+};
+
+/** Flow-builder node: freeform process step. */
+export type FlowNode = {
+  id: string;
+  label: string;
+  kind?: "start" | "end" | "task" | "decision" | "default";
+  meta?: Record<string, unknown>;
+};
+
+export type FlowLink = {
+  id?: string;
+  source: string;
+  target: string;
+  label?: string;
+};
+
 export type Position = { x: number; y: number };
 export type Size = { width: number; height: number };
 
@@ -36,9 +60,10 @@ export type LayoutEdge = {
   source: string;
   target: string;
   kind: LayoutEdgeKind;
+  label?: string;
 };
 
-export type LayoutResult<T = Employee> = {
+export type LayoutResult<T = unknown> = {
   nodes: PositionedNode<T>[];
   edges: LayoutEdge[];
   bounds: { width: number; height: number };
@@ -46,6 +71,23 @@ export type LayoutResult<T = Employee> = {
 
 export type OrgChartLayoutOptions = {
   direction?: "TB" | "BT";
+  nodeWidth?: number;
+  nodeHeight?: number;
+  rankSep?: number;
+  nodeSep?: number;
+};
+
+export type MindMapLayoutOptions = {
+  nodeWidth?: number;
+  nodeHeight?: number;
+  /** Distance between radial rings. */
+  levelSep?: number;
+  /** Angular gap factor (higher = more spread). */
+  siblingSep?: number;
+};
+
+export type FlowLayoutOptions = {
+  direction?: "TB" | "LR";
   nodeWidth?: number;
   nodeHeight?: number;
   rankSep?: number;

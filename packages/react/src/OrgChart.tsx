@@ -232,7 +232,8 @@ function OrgChartInner({
   const { query, setQuery, matchIds } = useSearch(data);
   const { focusedIds, focusedId, setFocus, clearFocus } = useFocusMode(data);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const selectedId = selectedIds[selectedIds.length - 1] ?? null;
   /** Free-drag positions that override dagre until reparent or explicit reset. */
   const [pinnedPositions, setPinnedPositions] = useState<Record<string, { x: number; y: number }>>(
     {},
@@ -275,16 +276,24 @@ function OrgChartInner({
         }
       }
       if (event.key === "Delete" || event.key === "Backspace") {
-        if (isEdit && selectedId && editor?.onRemove && !isEditableTarget(event.target)) {
+        if (
+          isEdit &&
+          selectedIds.length > 0 &&
+          editor?.onRemove &&
+          !isEditableTarget(event.target)
+        ) {
           event.preventDefault();
-          editor.onRemove(selectedId);
-          setSelectedId(null);
+          // Bulk remove: delete deepest first so reparent chains stay valid-ish
+          for (const id of [...selectedIds].reverse()) {
+            editor.onRemove(id);
+          }
+          setSelectedIds([]);
         }
       }
     }
     window.addEventListener("keydown", handle);
     return () => window.removeEventListener("keydown", handle);
-  }, [focusedId, clearFocus, showSearch, isEdit, editor, selectedId]);
+  }, [focusedId, clearFocus, showSearch, isEdit, editor, selectedIds]);
 
   const visibleData = useMemo(() => data.filter((e) => visibleIds.has(e.id)), [data, visibleIds]);
 
@@ -357,18 +366,20 @@ function OrgChartInner({
     setEdges(layoutEdges);
   }, [layoutNodes, layoutEdges, setNodes, setEdges]);
 
-  // Soft patch: selection + dim without resetting drag positions
+  // Soft patch: multi-select + dim without resetting drag positions
   useEffect(() => {
     const isSearchActive = query.trim().length > 0;
     const isFocusActive = focusedIds.size > 0;
+    const selectedSet = new Set(selectedIds);
     setNodes((prev) => {
       if (prev.length === 0) return prev;
       return prev.map((n) => {
         const searchDim = isSearchActive && !matchIds.has(n.id);
         const focusDim = isFocusActive && !focusedIds.has(n.id);
         const prevData = n.data as OrgChartNodeData;
+        const selected = selectedSet.has(n.id);
         if (
-          n.selected === (selectedId === n.id) &&
+          n.selected === selected &&
           prevData.searchDim === searchDim &&
           prevData.focusDim === focusDim
         ) {
@@ -376,12 +387,12 @@ function OrgChartInner({
         }
         return {
           ...n,
-          selected: selectedId === n.id,
+          selected,
           data: { ...prevData, searchDim, focusDim },
         };
       });
     });
-  }, [selectedId, query, matchIds, focusedIds, setNodes]);
+  }, [selectedIds, query, matchIds, focusedIds, setNodes]);
 
   const onNodeDragStop: OnNodeDrag = useCallback(
     (event, node) => {
@@ -463,26 +474,37 @@ function OrgChartInner({
             {...(editor.onRemove
               ? {
                   onRemoveSelected: () => {
-                    if (selectedId) {
-                      editor.onRemove?.(selectedId);
-                      setSelectedId(null);
+                    if (selectedIds.length === 0) return;
+                    for (const id of [...selectedIds].reverse()) {
+                      editor.onRemove?.(id);
                     }
+                    setSelectedIds([]);
                   },
                 }
               : {})}
-            hasSelection={Boolean(selectedId)}
+            hasSelection={selectedIds.length > 0}
+            selectionCount={selectedIds.length}
+            onExportJson={() => {
+              void import("@canvas/core").then(({ downloadJson }) => {
+                downloadJson("org-chart.json", data);
+              });
+            }}
             error={editor.lastError ?? null}
           />
         </div>
       ) : null}
-      {isEdit && showInspector && editor?.onUpdate && selectedEmployee ? (
+      {isEdit &&
+      showInspector &&
+      editor?.onUpdate &&
+      selectedEmployee &&
+      selectedIds.length === 1 ? (
         <div style={{ position: "absolute", top: 56, right: 12, zIndex: 10 }}>
           <InspectorPanel
             employee={selectedEmployee}
             onChange={(patch) => {
               editor.onUpdate?.(selectedEmployee.id, patch);
             }}
-            onClose={() => setSelectedId(null)}
+            onClose={() => setSelectedIds([])}
           />
         </div>
       ) : null}
@@ -497,20 +519,36 @@ function OrgChartInner({
         nodesConnectable={false}
         elementsSelectable
         nodesFocusable
+        multiSelectionKeyCode="Shift"
+        selectionOnDrag={isEdit}
         selectNodesOnDrag={false}
-        onNodeClick={(_, node) => {
+        onNodeClick={(event, node) => {
           setFocus(node.id);
-          setSelectedId(node.id);
+          if (event.shiftKey) {
+            setSelectedIds((prev) =>
+              prev.includes(node.id) ? prev.filter((id) => id !== node.id) : [...prev, node.id],
+            );
+          } else {
+            setSelectedIds([node.id]);
+          }
+        }}
+        onSelectionChange={({ nodes: sel }) => {
+          if (!isEdit) return;
+          // Keep multi-select from marquee in sync
+          if (sel.length > 1) {
+            setSelectedIds(sel.map((n) => n.id));
+          }
         }}
         onPaneClick={() => {
           clearFocus();
-          setSelectedId(null);
+          setSelectedIds([]);
         }}
         {...(isEdit ? { onNodeDragStop } : {})}
         fitView
         fitViewOptions={{ padding: 0.15, minZoom: 0.1, maxZoom: 1.5 }}
         minZoom={0.1}
         maxZoom={2}
+        onlyRenderVisibleElements
         proOptions={{ hideAttribution: true }}
         defaultEdgeOptions={{
           type: "solid",

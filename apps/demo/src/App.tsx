@@ -1,7 +1,14 @@
 import { parseEmployeesCsv } from "@canvas/core";
-import { type NodeVariant, OrgChart, useOrgChartEditor } from "@canvas/react";
+import { FlowBuilder, MindMap, type NodeVariant, OrgChart, useOrgChartEditor } from "@canvas/react";
 import { type ChangeEvent, type ReactElement, useCallback, useRef, useState } from "react";
-import { sampleCompany } from "./sampleCompany.js";
+import {
+  type DemoProduct,
+  largeOrgSample,
+  sampleCompany,
+  sampleFlowLinks,
+  sampleFlowNodes,
+  sampleMindMap,
+} from "./samples.js";
 
 const VARIANTS: { id: NodeVariant; label: string }[] = [
   { id: "default", label: "Default" },
@@ -10,9 +17,13 @@ const VARIANTS: { id: NodeVariant; label: string }[] = [
   { id: "minimal", label: "Minimal" },
 ];
 
-type ButtonVariant = "secondary" | "primary";
+const PRODUCTS: { id: DemoProduct; label: string }[] = [
+  { id: "org", label: "Org Chart" },
+  { id: "mind", label: "Mind Map" },
+  { id: "flow", label: "Flow" },
+  { id: "stress", label: "Stress 400" },
+];
 
-// Use longhand border* only — mixing `border` + `borderColor` triggers React warnings.
 const buttonBase: React.CSSProperties = {
   minHeight: 36,
   padding: "8px 14px",
@@ -27,23 +38,14 @@ const buttonBase: React.CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   gap: 6,
-  transition: "background-color 120ms ease, color 120ms ease, border-color 120ms ease",
 };
 
-function btnStyle(active: boolean, variant: ButtonVariant = "secondary"): React.CSSProperties {
-  if (active) {
-    return {
-      ...buttonBase,
-      background: "hsl(221 83% 53%)",
-      color: "#fff",
-      borderColor: "hsl(221 83% 45%)",
-    };
-  }
+function btnStyle(active: boolean): React.CSSProperties {
   return {
     ...buttonBase,
-    background: variant === "primary" ? "hsl(221 83% 53%)" : "transparent",
-    color: variant === "primary" ? "#fff" : "var(--canvas-node-text)",
-    borderColor: variant === "primary" ? "hsl(221 83% 45%)" : "var(--canvas-node-border)",
+    background: active ? "hsl(221 83% 53%)" : "transparent",
+    color: active ? "#fff" : "var(--canvas-node-text)",
+    borderColor: active ? "hsl(221 83% 45%)" : "var(--canvas-node-border)",
   };
 }
 
@@ -59,27 +61,16 @@ const groupStyle: React.CSSProperties = {
   borderColor: "var(--canvas-node-border)",
 };
 
-const groupButton = (active: boolean): React.CSSProperties => ({
-  minHeight: 30,
-  padding: "6px 12px",
-  borderRadius: 7,
-  border: "1px solid transparent",
-  cursor: "pointer",
-  fontSize: 13,
-  fontWeight: 600,
-  lineHeight: 1,
-  background: active ? "#fff" : "transparent",
-  color: active ? "hsl(221 83% 40%)" : "var(--canvas-node-text)",
-  boxShadow: active ? "0 1px 2px rgb(0 0 0 / 0.08)" : "none",
-  transition: "background-color 120ms ease, color 120ms ease, box-shadow 120ms ease",
-});
-
 export function App(): ReactElement {
+  const [product, setProduct] = useState<DemoProduct>("org");
   const [nodeVariant, setNodeVariant] = useState<NodeVariant>("detailed");
   const [mode, setMode] = useState<"view" | "edit">("view");
   const [importMsg, setImportMsg] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const editor = useOrgChartEditor({ initialData: sampleCompany });
+  const stressEditor = useOrgChartEditor({ initialData: largeOrgSample(400) });
+
+  const activeEditor = product === "stress" ? stressEditor : editor;
 
   const onCsvFile = useCallback(
     async (event: ChangeEvent<HTMLInputElement>) => {
@@ -94,6 +85,7 @@ export function App(): ReactElement {
           return;
         }
         editor.replace(employees);
+        setProduct("org");
         setImportMsg(
           `Imported ${employees.length} people${warnings.length ? ` (${warnings.length} warnings)` : ""}`,
         );
@@ -109,6 +101,7 @@ export function App(): ReactElement {
     const text = await res.text();
     const { employees, warnings } = parseEmployeesCsv(text);
     editor.replace(employees);
+    setProduct("org");
     setImportMsg(
       `Loaded sample CSV (${employees.length} people${warnings.length ? `, ${warnings.length} warnings` : ""})`,
     );
@@ -116,6 +109,7 @@ export function App(): ReactElement {
 
   const resetDemo = useCallback(() => {
     editor.replace(sampleCompany);
+    setProduct("org");
     setImportMsg("Reset to built-in sample company");
   }, [editor]);
 
@@ -126,77 +120,81 @@ export function App(): ReactElement {
           display: "flex",
           flexWrap: "wrap",
           alignItems: "center",
-          gap: 10,
+          gap: 12,
           padding: "12px 16px",
           borderBottom: "1px solid var(--canvas-node-border)",
           background: "var(--canvas-node-bg)",
           zIndex: 20,
         }}
       >
-        <strong
-          style={{
-            color: "var(--canvas-node-text)",
-            fontSize: 15,
-            marginRight: 4,
-          }}
-        >
-          Canvas — Org Chart Kit
+        <strong style={{ color: "var(--canvas-node-text)", fontSize: 15, marginRight: 4 }}>
+          Canvas Platform
         </strong>
-        <div style={groupStyle} aria-label="Mode">
-          {(["view", "edit"] as const).map((m) => (
+        <div style={groupStyle} aria-label="Product">
+          {PRODUCTS.map((p) => (
             <button
-              key={m}
+              key={p.id}
               type="button"
-              onClick={() => setMode(m)}
-              style={groupButton(mode === m)}
-              aria-pressed={mode === m}
+              onClick={() => setProduct(p.id)}
+              style={btnStyle(product === p.id)}
+              aria-pressed={product === p.id}
             >
-              {m === "view" ? "View" : "Edit"}
+              {p.label}
             </button>
           ))}
         </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".csv,text/csv"
-            style={{ display: "none" }}
-            onChange={onCsvFile}
-          />
-          <button type="button" style={btnStyle(false)} onClick={() => fileRef.current?.click()}>
-            Import CSV
-          </button>
-          <button type="button" style={btnStyle(false)} onClick={() => void loadSampleCsv()}>
-            Sample CSV
-          </button>
-          <button type="button" style={btnStyle(false)} onClick={resetDemo}>
-            Reset
-          </button>
-          <a
-            href="/sample-org.csv"
-            download
-            style={{
-              ...btnStyle(false),
-              textDecoration: "none",
-              color: "inherit",
-            }}
-          >
-            Download CSV
-          </a>
-        </div>
-        <div style={{ ...groupStyle, marginLeft: "auto" }} aria-label="Card density">
-          {VARIANTS.map((v) => (
-            <button
-              key={v.id}
-              type="button"
-              onClick={() => setNodeVariant(v.id)}
-              style={groupButton(nodeVariant === v.id)}
-              aria-pressed={nodeVariant === v.id}
-            >
-              {v.label}
-            </button>
-          ))}
-        </div>
+        {(product === "org" || product === "stress") && (
+          <>
+            <div style={groupStyle} aria-label="Mode">
+              {(["view", "edit"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMode(m)}
+                  style={btnStyle(mode === m)}
+                  aria-pressed={mode === m}
+                >
+                  {m === "view" ? "View" : "Edit"}
+                </button>
+              ))}
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".csv,text/csv"
+                style={{ display: "none" }}
+                onChange={onCsvFile}
+              />
+              <button
+                type="button"
+                style={btnStyle(false)}
+                onClick={() => fileRef.current?.click()}
+              >
+                Import CSV
+              </button>
+              <button type="button" style={btnStyle(false)} onClick={() => void loadSampleCsv()}>
+                Sample CSV
+              </button>
+              <button type="button" style={btnStyle(false)} onClick={resetDemo}>
+                Reset
+              </button>
+            </div>
+            <div style={{ ...groupStyle, marginLeft: "auto" }} aria-label="Card density">
+              {VARIANTS.map((v) => (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => setNodeVariant(v.id)}
+                  style={btnStyle(nodeVariant === v.id)}
+                  aria-pressed={nodeVariant === v.id}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </header>
       {importMsg ? (
         <p
@@ -206,13 +204,26 @@ export function App(): ReactElement {
             fontSize: 13,
             color: "var(--canvas-node-text)",
             borderBottom: "1px solid var(--canvas-node-border)",
-            background: "var(--canvas-bg)",
           }}
         >
           {importMsg}
         </p>
       ) : null}
-      {mode === "edit" ? (
+      {product === "stress" ? (
+        <p
+          style={{
+            margin: 0,
+            padding: "8px 16px",
+            fontSize: 13,
+            color: "var(--canvas-node-text-muted)",
+            borderBottom: "1px solid var(--canvas-node-border)",
+          }}
+        >
+          Stress mode: 400-node synthetic org with onlyRenderVisibleElements — pan/zoom to verify
+          scale.
+        </p>
+      ) : null}
+      {mode === "edit" && (product === "org" || product === "stress") ? (
         <p
           style={{
             margin: 0,
@@ -223,34 +234,40 @@ export function App(): ReactElement {
             background: "hsl(221 83% 96%)",
           }}
         >
-          Edit mode: drag cards freely (they stay put) · drop onto another person to reparent ·
-          select for inspector · Undo/Redo/Vacant in toolbar · Delete removes selection
+          Edit: free drag · drop on a person to reparent · Shift+click multi-select · marquee select
+          · bulk Remove · Export JSON · inspector on single select
         </p>
       ) : null}
       <div style={{ flex: 1, minHeight: 0 }}>
-        <OrgChart
-          data={editor.data}
-          mode={mode}
-          showSearch
-          showMinimap
-          showControls
-          nodeVariant={nodeVariant}
-          editor={
-            mode === "edit"
-              ? {
-                  onReparent: editor.reparent,
-                  onAddVacant: editor.addVacant,
-                  onRemove: editor.remove,
-                  onUpdate: editor.update,
-                  onUndo: editor.undo,
-                  onRedo: editor.redo,
-                  canUndo: editor.canUndo,
-                  canRedo: editor.canRedo,
-                  lastError: editor.lastError,
-                }
-              : undefined
-          }
-        />
+        {product === "mind" ? (
+          <MindMap data={sampleMindMap} />
+        ) : product === "flow" ? (
+          <FlowBuilder nodes={sampleFlowNodes} links={sampleFlowLinks} />
+        ) : (
+          <OrgChart
+            data={activeEditor.data}
+            mode={mode}
+            showSearch
+            showMinimap
+            showControls
+            nodeVariant={product === "stress" ? "compact" : nodeVariant}
+            editor={
+              mode === "edit"
+                ? {
+                    onReparent: activeEditor.reparent,
+                    onAddVacant: activeEditor.addVacant,
+                    onRemove: activeEditor.remove,
+                    onUpdate: activeEditor.update,
+                    onUndo: activeEditor.undo,
+                    onRedo: activeEditor.redo,
+                    canUndo: activeEditor.canUndo,
+                    canRedo: activeEditor.canRedo,
+                    lastError: activeEditor.lastError,
+                  }
+                : undefined
+            }
+          />
+        )}
       </div>
     </div>
   );

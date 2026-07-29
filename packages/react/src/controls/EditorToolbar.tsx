@@ -8,6 +8,8 @@ export type EditorToolbarProps = {
   onAddVacant: () => void;
   onRemoveSelected?: () => void;
   hasSelection?: boolean;
+  selectionCount?: number;
+  onExportJson?: () => void;
   error?: string | null;
 };
 
@@ -19,6 +21,8 @@ export function EditorToolbar({
   onAddVacant,
   onRemoveSelected,
   hasSelection = false,
+  selectionCount = 0,
+  onExportJson,
   error,
 }: EditorToolbarProps): ReactElement {
   return (
@@ -61,7 +65,17 @@ export function EditorToolbar({
           disabled={!hasSelection}
           aria-label="Remove selected"
         >
-          Remove
+          Remove{selectionCount > 1 ? ` (${selectionCount})` : ""}
+        </button>
+      ) : null}
+      {onExportJson ? (
+        <button
+          type="button"
+          className="nodrag nopan rounded px-2 py-1 text-xs font-semibold text-canvas-node-text hover:bg-canvas-selection"
+          onClick={onExportJson}
+          aria-label="Export JSON"
+        >
+          Export JSON
         </button>
       ) : null}
       {error ? (

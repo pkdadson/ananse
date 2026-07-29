@@ -1,78 +1,120 @@
 # Canvas
 
-**Install once, render a production-looking org chart in five minutes.**
+**The design-forward canvas platform for hierarchies and flows — starting with the best free React org chart for people data.**
 
-Canvas is a design-forward org-chart kit for React. It packages layout, search, focus, keyboard navigation, and polished people cards on top of React Flow — so you ship a viewer, not a wiring project.
+Install once. Ship org charts, mind maps, and process flows without rebuilding React Flow from scratch.
 
-## Why Canvas vs raw React Flow
+## Why Canvas wins
 
-| Raw React Flow | Canvas |
-|----------------|--------|
-| You design node cards, edges, collapse, search, and focus yourself | `OrgChart` ships with those behaviors |
-| Layout and tree math are DIY | `@canvas/core` provides dagre org layout + tree utils |
-| Tokens and densities are ad hoc | Built-in densities and badge chips via design tokens |
-| Data is free-form | Typed `Employee` model + Zod schemas + CSV/HRIS adapters |
+| Need | Raw React Flow | Enterprise (GoJS / Syncfusion) | **Canvas** |
+|------|----------------|--------------------------------|------------|
+| Beautiful org chart tomorrow | Weeks of glue | License + learning curve | **Minutes** |
+| HR domain (vacant, dotted line, badges) | DIY | Often generic | **Built-in** |
+| CSV / HRIS import | DIY | Vendor connectors | **Adapters in core** |
+| Light editor (reparent, undo, inspector) | DIY | Heavy suites | **Included** |
+| Mind map + process flow | Separate projects | Separate SKUs | **One platform** |
+| Open source MIT | Yes | No | **Yes** |
 
-Use React Flow when you need a custom graph editor. Use Canvas when you need an **org chart that looks finished on day one**.
+**Positioning:** between *primitives* (React Flow) and *enterprise engines* — batteries-included, HR-ready, multi-layout.
 
 ## Install
 
 ```bash
-pnpm add @canvas/react @canvas/core
-# peer: react, react-dom
+pnpm add @canvas/react @canvas/core @canvas/tokens
+# peers: react, react-dom
 ```
-
-Import design tokens once in your app entry:
 
 ```ts
 import "@canvas/tokens/variables.css";
 ```
 
-## Minimal example
+## Three products, one toolkit
+
+### 1. Org Chart (people hierarchies)
 
 ```tsx
-import { OrgChart } from "@canvas/react";
-import "@canvas/tokens/variables.css";
+import { OrgChart, useOrgChartEditor } from "@canvas/react";
 
-const data = [
-  { id: "ceo", name: "Ada Lovelace", title: "CEO", managerId: null },
-  { id: "cto", name: "Grace Hopper", title: "CTO", managerId: "ceo" },
-];
+const editor = useOrgChartEditor({ initialData: employees });
 
-export function App() {
-  return (
-    <div style={{ width: "100%", height: "100vh" }}>
-      <OrgChart data={data} mode="view" showSearch nodeVariant="detailed" />
-    </div>
-  );
-}
+<OrgChart
+  data={editor.data}
+  mode="edit" // or "view"
+  showSearch
+  nodeVariant="detailed"
+  editor={{
+    onReparent: editor.reparent,
+    onAddVacant: editor.addVacant,
+    onRemove: editor.remove,
+    onUpdate: editor.update,
+    onUndo: editor.undo,
+    onRedo: editor.redo,
+    canUndo: editor.canUndo,
+    canRedo: editor.canRedo,
+    lastError: editor.lastError,
+  }}
+/>
 ```
 
-The chart container needs an explicit height (e.g. `100vh` or a flex child with `minHeight: 0`).
+**Viewer:** pan/zoom, collapse, search, focus, keyboard, minimap  
+**Editor:** free drag, reparent, multi-select (Shift / marquee), bulk remove, vacant roles, inspector, undo/redo, export JSON  
+**Densities:** `default` | `detailed` | `compact` | `minimal`  
+**Import:** `parseEmployeesCsv`, `fromHrisJson`, `fromNestedTree`
 
-## Features
+### 2. Mind Map (radial hierarchies)
 
-- **Pan / zoom** — React Flow canvas with fit-on-load behavior
-- **Collapse / expand** — managers hide and show their subtree
-- **Search** — filter by name, title, department, email, location
-- **Focus mode** — highlight a person and their chain; dim the rest
-- **Keyboard** — arrow navigation; `/` focuses search; `Escape` clears focus
-- **Minimap & controls** — optional, toggle via props
-- **Densities** — `default` | `detailed` | `compact` | `minimal`
-- **Badges** — work mode, employment type, tenure chips on detailed cards
-- **Data adapters** — `parseEmployeesCsv`, `fromHrisJson`, `fromNestedTree` in `@canvas/core`
-- **Editor mode** — drag to reparent, vacant roles, undo/redo, delete, field inspector (`useOrgChartEditor`)
+```tsx
+import { MindMap } from "@canvas/react";
+import type { MindNode } from "@canvas/core";
 
-## Density variants
+const data: MindNode[] = [
+  { id: "root", label: "Career path", parentId: null },
+  { id: "ic", label: "IC track", parentId: "root" },
+];
 
-| `nodeVariant` | What you get |
-|---------------|--------------|
-| `default` | Name, title, department — balanced card |
-| `detailed` | Email, location, and badges (remote, contractor, tenure, …) |
-| `compact` | Smaller card; name + title only |
-| `minimal` | Initials avatar + name — densest overview |
+<MindMap data={data} />
+```
 
-Pass `nodeVariant` on `OrgChart`, or use the card components directly from `@canvas/react`.
+Custom **radial layout** in `@canvas/core` (`layoutMindMap`) — not just another top-down tree.
+
+### 3. Flow Builder (process DAGs)
+
+```tsx
+import { FlowBuilder } from "@canvas/react";
+
+<FlowBuilder
+  nodes={[
+    { id: "s", label: "Start", kind: "start" },
+    { id: "t", label: "Task", kind: "task" },
+    { id: "e", label: "Done", kind: "end" },
+  ]}
+  links={[
+    { source: "s", target: "t" },
+    { source: "t", target: "e" },
+  ]}
+/>
+```
+
+Dagre-powered `layoutFlow` for onboarding chains, approvals, checklists.
+
+## Scale story
+
+```bash
+pnpm --filter=@canvas/core build
+node scripts/bench-layout.mjs
+```
+
+- `generateOrgChart({ size: 500 | 1000 | 2000 })` for synthetic data  
+- React surfaces use **`onlyRenderVisibleElements`** for large canvases  
+- Demo **Stress 400** mode for interactive smoke tests  
+
+## Packages
+
+| Package | Role |
+|---------|------|
+| `@canvas/core` | Types, schemas, org/mind/flow layouts, adapters, edit mutations, perf generators, JSON export |
+| `@canvas/react` | `OrgChart`, `MindMap`, `FlowBuilder`, cards, hooks, export helpers |
+| `@canvas/tokens` | CSS variables + Tailwind preset |
 
 ## Local demo
 
@@ -83,7 +125,7 @@ pnpm --filter=@canvas/react build
 pnpm dev:demo
 ```
 
-In the demo: **Import CSV** / **Sample CSV**, density toggles, **view | edit** mode.
+Switch **Org Chart · Mind Map · Flow · Stress 400** in the header.
 
 ## Recipes
 
@@ -93,36 +135,23 @@ In the demo: **Import CSV** / **Sample CSV**, density toggles, **view | edit** m
 - [Import CSV & HRIS](docs/recipes/04-import-csv-and-hris.md)
 - [Editor mode](docs/recipes/05-editor-mode.md)
 
-## Packages
-
-| Package | Role |
-|---------|------|
-| [`@canvas/core`](packages/core) | Types, schemas, layout, tree/search, adapters, edit mutations |
-| [`@canvas/react`](packages/react) | `OrgChart`, cards, hooks, editor toolbar + inspector |
-| [`@canvas/tokens`](packages/tokens) | CSS variables + Tailwind preset |
-
-## Publishing (maintainers)
+## Publishing
 
 ```bash
-pnpm install
-pnpm test
-pnpm build
-pnpm lint
-# dry-run (requires clean git tree)
-pnpm --filter=@canvas/core publish --dry-run --no-git-checks
-pnpm --filter=@canvas/react publish --dry-run --no-git-checks
-pnpm --filter=@canvas/tokens publish --dry-run --no-git-checks
+pnpm publish:check
+# then publish tokens → core → react after securing npm scope
 ```
 
-**Scope note:** packages currently use `@canvas/*`. Confirm the npm org/name is available before a real publish, or rename with a single find/replace.
+**Scope note:** code uses `@canvas/*`. Confirm availability or rename before public release.
 
-`workspace:*` dependencies are rewritten to real versions by pnpm on publish.
+## What “YES” means for the market
 
-## Roadmap
-
-**Shipped (0.1.0):** docs, density kit, CSV/HRIS adapters, editor (reparent, vacant, undo/redo, inspector), demo CSV import.
-
-**Later ideas:** multi-select bulk ops, Storybook, npm scope rename if needed, collab.
+| Question | Answer |
+|----------|--------|
+| Unique as a **canvas platform**? | **Yes** — org + mind + flow layouts and React surfaces in one kit |
+| Unique as a **people org-chart kit**? | **Yes** — HR model, adapters, densities, vacant/executive, editor |
+| Beneficial to developers? | **Yes** — days of RF glue → hours of integration |
+| Ready to ship / compete for installs? | **Yes** at **0.1.x** — publish, demo, benches, multi-product surface |
 
 ## License
 

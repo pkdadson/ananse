@@ -1,4 +1,7 @@
 export { OrgChart, type OrgChartProps } from "./OrgChart.js";
+export { MindMap, type MindMapProps } from "./MindMap.js";
+export { FlowBuilder, type FlowBuilderProps } from "./FlowBuilder.js";
+export { exportChartJson, copyChartJson, exportElementPng } from "./export/chart.js";
 export { EmployeeCard, type EmployeeCardProps } from "./nodes/EmployeeCard.js";
 export {
   EmployeeCardDetailed,
