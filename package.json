@@ -12,7 +12,8 @@
     "test": "pnpm -r --filter='./packages/*' test",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "dev:demo": "pnpm --filter=demo dev"
+    "dev:demo": "pnpm --filter=demo dev",
+    "publish:check": "pnpm test && pnpm build && pnpm lint && pnpm --filter=@canvas/core publish --dry-run --no-git-checks && pnpm --filter=@canvas/react publish --dry-run --no-git-checks && pnpm --filter=@canvas/tokens publish --dry-run --no-git-checks"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",

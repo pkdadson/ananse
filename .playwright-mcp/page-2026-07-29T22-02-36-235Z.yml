@@ -1,0 +1,131 @@
+- generic [ref=f4e4]:
+  - searchbox "Search org chart" [ref=f4e7]
+  - application [ref=f4e8]:
+    - generic [ref=f4e10]:
+      - generic:
+        - generic:
+          - img:
+            - group "Edge from ceo to cto"
+          - img:
+            - group "Edge from ceo to cpo"
+          - img:
+            - group "Edge from ceo to cfo"
+          - img:
+            - group "Edge from cto to vp-eng-platform"
+          - img:
+            - group "Edge from cto to vp-eng-product"
+          - img:
+            - group "Edge from cpo to vp-design"
+          - img:
+            - group "Edge from vp-eng-platform to sr-eng-1"
+          - img:
+            - group "Edge from vp-eng-platform to sr-eng-2"
+          - img:
+            - group "Edge from vp-eng-product to sr-eng-2"
+          - img:
+            - group "Edge from vp-eng-product to eng-3"
+          - img:
+            - group "Edge from vp-design to des-1"
+          - img:
+            - group "Edge from ceo to vacant-1"
+        - generic:
+          - group [ref=f4e11] [cursor=pointer]:
+            - generic [ref=f4e14]:
+              - generic [ref=f4e15]: AL
+              - generic [ref=f4e16]:
+                - generic [ref=f4e17]: Ada Lovelace
+                - generic [ref=f4e18]: CEO
+              - 'generic "Department: operations" [ref=f4e19]'
+          - group [ref=f4e20] [cursor=pointer]:
+            - generic [ref=f4e23]:
+              - generic [ref=f4e24]: GH
+              - generic [ref=f4e25]:
+                - generic [ref=f4e26]: Grace Hopper
+                - generic [ref=f4e27]: CTO
+              - 'generic "Department: engineering" [ref=f4e28]'
+          - group [ref=f4e29] [cursor=pointer]:
+            - generic [ref=f4e32]:
+              - generic [ref=f4e33]: AT
+              - generic [ref=f4e34]:
+                - generic [ref=f4e35]: Alan Turing
+                - generic [ref=f4e36]: CPO
+              - 'generic "Department: product" [ref=f4e37]'
+          - group [ref=f4e38] [cursor=pointer]:
+            - generic [ref=f4e41]:
+              - generic [ref=f4e42]: KJ
+              - generic [ref=f4e43]:
+                - generic [ref=f4e44]: Katherine Johnson
+                - generic [ref=f4e45]: CFO
+              - 'generic "Department: finance" [ref=f4e46]'
+          - group [ref=f4e47] [cursor=pointer]:
+            - generic [ref=f4e49]:
+              - generic [ref=f4e50]:
+                - generic [ref=f4e51]: BL
+                - generic [ref=f4e52]:
+                  - generic [ref=f4e53]: Barbara Liskov
+                  - generic [ref=f4e54]: VP Platform
+                - 'generic "Department: engineering" [ref=f4e55]'
+              - generic [ref=f4e56]:
+                - generic [ref=f4e57]: 2 reports
+                - button "Collapse subtree" [ref=f4e58]: −
+          - group [ref=f4e59] [cursor=pointer]:
+            - generic [ref=f4e61]:
+              - generic [ref=f4e62]:
+                - generic [ref=f4e63]: MH
+                - generic [ref=f4e64]:
+                  - generic [ref=f4e65]: Margaret Hamilton
+                  - generic [ref=f4e66]: VP Product Eng
+                - 'generic "Department: engineering" [ref=f4e67]'
+              - generic [ref=f4e68]:
+                - generic [ref=f4e69]: 1 report
+                - button "Collapse subtree" [ref=f4e70]: −
+          - group [ref=f4e71] [cursor=pointer]:
+            - generic [ref=f4e73]:
+              - generic [ref=f4e74]:
+                - generic [ref=f4e75]: SK
+                - generic [ref=f4e76]:
+                  - generic [ref=f4e77]: Susan Kare
+                  - generic [ref=f4e78]: VP Design
+                - 'generic "Department: design" [ref=f4e79]'
+              - generic [ref=f4e80]:
+                - generic [ref=f4e81]: 1 report
+                - button "Collapse subtree" [ref=f4e82]: −
+          - group [ref=f4e83] [cursor=pointer]:
+            - generic [ref=f4e85]:
+              - generic [ref=f4e86]: LT
+              - generic [ref=f4e87]:
+                - generic [ref=f4e88]: Linus Torvalds
+                - generic [ref=f4e89]: Staff Engineer
+              - 'generic "Department: engineering" [ref=f4e90]'
+          - group [ref=f4e91] [cursor=pointer]:
+            - generic [ref=f4e93]:
+              - generic [ref=f4e94]: GR
+              - generic [ref=f4e95]:
+                - generic [ref=f4e96]: Guido van Rossum
+                - generic [ref=f4e97]: Staff Engineer
+              - 'generic "Department: engineering" [ref=f4e98]'
+          - group [ref=f4e99] [cursor=pointer]:
+            - generic [ref=f4e101]:
+              - generic [ref=f4e102]: JE
+              - generic [ref=f4e103]:
+                - generic [ref=f4e104]: Junior Engineer
+                - generic [ref=f4e105]: Software Engineer
+              - 'generic "Department: engineering" [ref=f4e106]'
+          - group [ref=f4e107] [cursor=pointer]:
+            - generic [ref=f4e109]:
+              - generic [ref=f4e110]: EU
+              - generic [ref=f4e111]:
+                - generic [ref=f4e112]: Ellen Ullman
+                - generic [ref=f4e113]: Senior Designer
+              - 'generic "Department: design" [ref=f4e114]'
+          - group [ref=f4e115] [cursor=pointer]:
+            - generic [ref=f4e117]:
+              - generic [ref=f4e118]: "?"
+              - generic [ref=f4e119]:
+                - generic [ref=f4e120]: Head of Growth
+                - generic [ref=f4e121]: OPEN
+    - generic "Control Panel" [ref=f4e123]:
+      - button "Zoom In" [ref=f4e124] [cursor=pointer]
+      - button "Zoom Out" [ref=f4e127] [cursor=pointer]
+      - button "Fit View" [ref=f4e130] [cursor=pointer]
+    - img "Mini Map" [ref=f4e134]

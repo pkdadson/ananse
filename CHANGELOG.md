@@ -4,6 +4,10 @@
 
 First installable milestone of the Canvas org-chart kit.
 
+### Demo & packaging
+- Demo CSV import / sample CSV / reset
+- MIT `LICENSE`, package keywords, `prepublishOnly`, `pnpm publish:check`
+
 ### `@canvas/core`
 - Types: `Employee` with people fields (email, location, tenure, employment type, work mode)
 - Zod schemas with enum validation

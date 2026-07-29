@@ -1,12 +1,14 @@
 {
   "name": "@canvas/core",
   "version": "0.1.0",
-  "description": "Framework-agnostic types, layout algorithms, and schemas for the canvas library.",
+  "description": "Framework-agnostic types, layout, schemas, data adapters, and edit mutations for Canvas org charts.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "keywords": ["org-chart", "hierarchy", "dagre", "hr", "typescript", "canvas"],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -14,14 +16,15 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "README.md"],
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepublishOnly": "pnpm run build && pnpm run test"
   },
   "dependencies": {
     "@dagrejs/dagre": "^1.1.4",

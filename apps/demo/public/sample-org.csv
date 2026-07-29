@@ -1,0 +1,7 @@
+employeeId,fullName,jobTitle,managerId,department,email,location,workMode,employmentType,tenureYears
+ceo,Ada Lovelace,CEO,,operations,ada@example.com,London,hybrid,employee,12
+cto,Grace Hopper,CTO,ceo,engineering,grace@example.com,Remote,remote,employee,8
+cpo,Alan Turing,CPO,ceo,product,alan@example.com,Cambridge,hybrid,employee,6
+eng1,Barbara Liskov,VP Platform,cto,engineering,barbara@example.com,Boston,onsite,employee,5
+eng2,Guido van Rossum,Staff Engineer,eng1,engineering,guido@example.com,Amsterdam,hybrid,contractor,2
+des1,Susan Kare,VP Design,cpo,design,susan@example.com,SF,remote,employee,4

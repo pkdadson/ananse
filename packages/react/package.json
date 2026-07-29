@@ -1,28 +1,14 @@
 {
   "name": "@canvas/react",
   "version": "0.1.0",
-  "description": "React bindings for the canvas library: OrgChart, MindMap, FlowBuilder.",
+  "description": "React OrgChart viewer and editor for Canvas — densities, search, reparent, inspector.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    }
-  },
-  "files": ["dist"],
-  "publishConfig": {
-    "access": "public"
-  },
-  "scripts": {
-    "build": "tsup",
-    "test": "vitest run",
-    "test:watch": "vitest"
-  },
+  "sideEffects": ["**/*.css"],
+  "keywords": ["org-chart", "react", "react-flow", "xyflow", "hr", "hierarchy"],
   "peerDependencies": {
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0"
@@ -31,6 +17,23 @@
     "@canvas/core": "workspace:*",
     "@canvas/tokens": "workspace:*",
     "@xyflow/react": "^12.3.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist", "README.md"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "pnpm run build && pnpm run test"
   },
   "devDependencies": {
     "@testing-library/react": "^16.0.1",

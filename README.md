@@ -83,6 +83,8 @@ pnpm --filter=@canvas/react build
 pnpm dev:demo
 ```
 
+In the demo: **Import CSV** / **Sample CSV**, density toggles, **view | edit** mode.
+
 ## Recipes
 
 - [Quickstart](docs/recipes/01-quickstart.md)
@@ -96,15 +98,32 @@ pnpm dev:demo
 | Package | Role |
 |---------|------|
 | [`@canvas/core`](packages/core) | Types, schemas, layout, tree/search, adapters, edit mutations |
-| [`@canvas/react`](packages/react) | `OrgChart`, cards, hooks, editor toolbar |
+| [`@canvas/react`](packages/react) | `OrgChart`, cards, hooks, editor toolbar + inspector |
 | [`@canvas/tokens`](packages/tokens) | CSS variables + Tailwind preset |
+
+## Publishing (maintainers)
+
+```bash
+pnpm install
+pnpm test
+pnpm build
+pnpm lint
+# dry-run (requires clean git tree)
+pnpm --filter=@canvas/core publish --dry-run --no-git-checks
+pnpm --filter=@canvas/react publish --dry-run --no-git-checks
+pnpm --filter=@canvas/tokens publish --dry-run --no-git-checks
+```
+
+**Scope note:** packages currently use `@canvas/*`. Confirm the npm org/name is available before a real publish, or rename with a single find/replace.
+
+`workspace:*` dependencies are rewritten to real versions by pnpm on publish.
 
 ## Roadmap
 
-Shipped: docs, density kit, CSV/HRIS adapters, **editor mode** (reparent, vacant, undo/redo).
+**Shipped (0.1.0):** docs, density kit, CSV/HRIS adapters, editor (reparent, vacant, undo/redo, inspector), demo CSV import.
 
-Possible later: side-panel field editor, multi-select bulk ops, collab.
+**Later ideas:** multi-select bulk ops, Storybook, npm scope rename if needed, collab.
 
 ## License
 
-MIT
+MIT — see [LICENSE](./LICENSE).

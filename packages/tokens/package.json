@@ -1,17 +1,30 @@
 {
   "name": "@canvas/tokens",
   "version": "0.1.0",
-  "description": "CSS variables and Tailwind preset for the canvas library.",
+  "description": "CSS variables and Tailwind preset for the Canvas design system.",
   "license": "MIT",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
+  "sideEffects": ["**/*.css"],
+  "keywords": ["design-tokens", "css-variables", "tailwind", "org-chart", "theme"],
   "exports": {
     ".": "./src/index.ts",
     "./variables.css": "./src/variables.css",
     "./tailwind": "./src/tailwind.ts"
   },
-  "files": ["src"],
+  "files": ["src", "README.md"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "tailwindcss": ">=3.4.0"
+  },
+  "peerDependenciesMeta": {
+    "tailwindcss": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "tailwindcss": "^3.4.0"
   }
