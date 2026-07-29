@@ -1,4 +1,4 @@
-import '@testing-library/jest-dom/vitest';
+import "@testing-library/jest-dom/vitest";
 
 class ResizeObserverMock {
   observe() {}
@@ -10,6 +10,5 @@ globalThis.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserv
 
 class DOMMatrixReadOnlyMock {
   m22 = 1;
-  constructor() {}
 }
 globalThis.DOMMatrixReadOnly = DOMMatrixReadOnlyMock as unknown as typeof DOMMatrixReadOnly;

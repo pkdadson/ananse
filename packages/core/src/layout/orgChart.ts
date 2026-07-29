@@ -1,11 +1,11 @@
-import Dagre from '@dagrejs/dagre';
+import Dagre from "@dagrejs/dagre";
 import type {
   Employee,
   LayoutEdge,
   LayoutResult,
   OrgChartLayoutOptions,
   PositionedNode,
-} from '../types.js';
+} from "../types.js";
 
 const DEFAULT_NODE_WIDTH = 240;
 const DEFAULT_NODE_HEIGHT = 120;
@@ -18,7 +18,7 @@ export function layoutOrgChart(
 ): LayoutResult<Employee> {
   const width = options.nodeWidth ?? DEFAULT_NODE_WIDTH;
   const height = options.nodeHeight ?? DEFAULT_NODE_HEIGHT;
-  const direction = options.direction ?? 'TB';
+  const direction = options.direction ?? "TB";
 
   if (employees.length === 0) {
     return { nodes: [], edges: [], bounds: { width: 0, height: 0 } };
@@ -47,7 +47,7 @@ export function layoutOrgChart(
         id: `solid:${e.managerId}->${e.id}`,
         source: e.managerId,
         target: e.id,
-        kind: 'solid',
+        kind: "solid",
       });
     }
     for (const dottedId of e.dottedLineManagerIds ?? []) {
@@ -56,7 +56,7 @@ export function layoutOrgChart(
           id: `dotted:${dottedId}->${e.id}`,
           source: dottedId,
           target: e.id,
-          kind: 'dotted',
+          kind: "dotted",
         });
       }
     }

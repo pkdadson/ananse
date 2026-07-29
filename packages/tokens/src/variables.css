@@ -34,7 +34,7 @@
   --canvas-role-vacant-bg: hsl(240 4.8% 96%);
 }
 
-[data-theme='dark'] {
+[data-theme="dark"] {
   --canvas-bg: hsl(240 10% 4%);
   --canvas-node-bg: hsl(240 10% 8%);
   --canvas-node-border: hsl(240 5% 20%);

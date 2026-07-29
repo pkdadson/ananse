@@ -1,4 +1,4 @@
-import type { Employee } from '../types.js';
+import type { Employee } from "../types.js";
 
 function indexByManager(employees: Employee[]): Map<string | null, Employee[]> {
   const byManager = new Map<string | null, Employee[]>();
@@ -20,7 +20,8 @@ export function getDescendants(employees: Employee[], employeeId: string): Emplo
   const result: Employee[] = [];
   const stack: string[] = [employeeId];
   while (stack.length > 0) {
-    const current = stack.pop()!;
+    const current = stack.pop();
+    if (current === undefined) break;
     const children = byManager.get(current) ?? [];
     for (const child of children) {
       result.push(child);

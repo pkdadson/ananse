@@ -21,7 +21,7 @@ export type PositionedNode<T = Employee> = {
   data: T;
 };
 
-export type LayoutEdgeKind = 'solid' | 'dotted';
+export type LayoutEdgeKind = "solid" | "dotted";
 
 export type LayoutEdge = {
   id: string;
@@ -37,7 +37,7 @@ export type LayoutResult<T = Employee> = {
 };
 
 export type OrgChartLayoutOptions = {
-  direction?: 'TB' | 'BT';
+  direction?: "TB" | "BT";
   nodeWidth?: number;
   nodeHeight?: number;
   rankSep?: number;
