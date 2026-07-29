@@ -5,3 +5,5 @@ dist
 coverage
 *.log
 .vite
+canvas-*.png
+org-chart-*.png
