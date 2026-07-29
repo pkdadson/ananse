@@ -9,7 +9,7 @@ import {
   ReactFlow,
   ReactFlowProvider,
 } from "@xyflow/react";
-import { type ReactElement, useCallback, useMemo } from "react";
+import { type ReactElement, useCallback, useEffect, useMemo, useRef } from "react";
 import "@xyflow/react/dist/style.css";
 import type { Employee, LayoutResult, OrgChartLayoutOptions } from "@canvas/core";
 import { getDirectReports, layoutOrgChart } from "@canvas/core";
@@ -20,7 +20,7 @@ import { useFocusMode } from "./hooks/useFocusMode.js";
 import { useKeyboardNav } from "./hooks/useKeyboardNav.js";
 import { useOrgChartState } from "./hooks/useOrgChartState.js";
 import { useSearch } from "./hooks/useSearch.js";
-import { EmployeeCard } from "./nodes/EmployeeCard.js";
+import { EmployeeFace, type NodeVariant } from "./nodes/employeeFace.js";
 import { ExecutiveCard } from "./nodes/ExecutiveCard.js";
 import { ManagerCard } from "./nodes/ManagerCard.js";
 import { NodeShell } from "./nodes/NodeShell.js";
@@ -35,13 +35,14 @@ export type OrgChartNodeData = {
   onToggleCollapse: () => void;
   searchDim: boolean;
   focusDim: boolean;
+  nodeVariant: NodeVariant;
 };
 
 function EmployeeNode({ data }: NodeProps & { data: OrgChartNodeData }): ReactElement {
   const dim = data.searchDim || data.focusDim;
   return (
     <NodeShell searchDim={data.searchDim} dim={dim}>
-      <EmployeeCard data={data.employee} />
+      <EmployeeFace data={data.employee} variant={data.nodeVariant} />
     </NodeShell>
   );
 }
@@ -50,7 +51,7 @@ function ExecutiveNode({ data }: NodeProps & { data: OrgChartNodeData }): ReactE
   const dim = data.searchDim || data.focusDim;
   return (
     <NodeShell searchDim={data.searchDim} dim={dim}>
-      <ExecutiveCard data={data.employee} />
+      <ExecutiveCard data={data.employee} variant={data.nodeVariant} />
     </NodeShell>
   );
 }
@@ -76,6 +77,7 @@ function ManagerNode({ data }: NodeProps & { data: OrgChartNodeData }): ReactEle
         directReportCount={data.directReportCount}
         collapsed={data.collapsed}
         onToggleCollapse={data.onToggleCollapse}
+        variant={data.nodeVariant}
       />
     </NodeShell>
   );
@@ -106,6 +108,7 @@ export type OrgChartProps = {
   showSearch?: boolean;
   showMinimap?: boolean;
   showControls?: boolean;
+  nodeVariant?: NodeVariant;
 };
 
 function OrgChartInner({
@@ -115,13 +118,44 @@ function OrgChartInner({
   showSearch = false,
   showMinimap = true,
   showControls = true,
+  nodeVariant = "default",
 }: OrgChartProps): ReactElement {
   const { visibleIds, isCollapsed, toggleCollapse } = useOrgChartState(data);
   const { query, setQuery, matchIds } = useSearch(data);
-  const { focusedIds, focusedId, setFocus } = useFocusMode(data);
+  const { focusedIds, focusedId, setFocus, clearFocus } = useFocusMode(data);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const onFocus = useCallback((id: string) => setFocus(id), [setFocus]);
   useKeyboardNav({ employees: data, focusedId, onFocus });
+
+  // Global viewer shortcuts: `/` focuses search, `Escape` clears focus mode.
+  useEffect(() => {
+    function isEditableTarget(el: EventTarget | null): boolean {
+      if (!(el instanceof HTMLElement)) return false;
+      if (el.isContentEditable) return true;
+      const tag = el.tagName;
+      return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+    }
+    function handle(event: KeyboardEvent): void {
+      if (event.key === "Escape" && focusedId) {
+        event.preventDefault();
+        clearFocus();
+        return;
+      }
+      if (event.key === "/" && showSearch && !isEditableTarget(event.target)) {
+        const input = containerRef.current?.querySelector<HTMLInputElement>(
+          'input[role="searchbox"]',
+        );
+        if (input) {
+          event.preventDefault();
+          input.focus();
+          input.select();
+        }
+      }
+    }
+    window.addEventListener("keydown", handle);
+    return () => window.removeEventListener("keydown", handle);
+  }, [focusedId, clearFocus, showSearch]);
 
   const visibleData = useMemo(() => data.filter((e) => visibleIds.has(e.id)), [data, visibleIds]);
 
@@ -166,10 +200,11 @@ function OrgChartInner({
             onToggleCollapse: () => toggleCollapse(n.id),
             searchDim,
             focusDim,
+            nodeVariant,
           } satisfies OrgChartNodeData,
         };
       }),
-    [layout.nodes, data, isCollapsed, toggleCollapse, query, matchIds, focusedIds],
+    [layout.nodes, data, isCollapsed, toggleCollapse, query, matchIds, focusedIds, nodeVariant],
   );
 
   const rfEdges: Edge[] = useMemo(
@@ -187,7 +222,7 @@ function OrgChartInner({
   );
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+    <div ref={containerRef} style={{ position: "relative", width: "100%", height: "100%" }}>
       {showSearch ? (
         <div style={{ position: "absolute", top: 12, left: 12, zIndex: 10 }}>
           <SearchBar value={query} onChange={setQuery} />
@@ -203,7 +238,10 @@ function OrgChartInner({
         elementsSelectable={mode === "edit"}
         // Nodes stay interactive for collapse buttons even in view mode.
         nodesFocusable
+        onNodeClick={(_, node) => setFocus(node.id)}
+        onPaneClick={clearFocus}
         fitView
+        fitViewOptions={{ padding: 0.2, minZoom: 0.5, maxZoom: 1.5 }}
         minZoom={0.2}
         maxZoom={2}
         proOptions={{ hideAttribution: true }}
@@ -213,7 +251,12 @@ function OrgChartInner({
         }}
       >
         <Background gap={20} size={1} color="var(--canvas-node-border)" />
-        {showControls ? <Controls showInteractive={false} /> : null}
+        {showControls ? (
+          <Controls
+            showInteractive={false}
+            fitViewOptions={{ padding: 0.2, minZoom: 0.5, maxZoom: 1.5 }}
+          />
+        ) : null}
         {showMinimap ? (
           <MiniMap
             pannable
