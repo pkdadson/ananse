@@ -1,3 +1,10 @@
+import type {
+  AddVacantRoleInput,
+  Employee,
+  LayoutResult,
+  OrgChartLayoutOptions,
+} from "@canvas/core";
+import { getDescendants, getDirectReports, layoutOrgChart } from "@canvas/core";
 import {
   Background,
   Controls,
@@ -5,14 +12,15 @@ import {
   MiniMap,
   type Node,
   type NodeProps,
+  type OnNodeDrag,
   Position,
   ReactFlow,
   ReactFlowProvider,
+  useReactFlow,
 } from "@xyflow/react";
-import { type ReactElement, useCallback, useEffect, useMemo, useRef } from "react";
+import { type ReactElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "@xyflow/react/dist/style.css";
-import type { Employee, LayoutResult, OrgChartLayoutOptions } from "@canvas/core";
-import { getDirectReports, layoutOrgChart } from "@canvas/core";
+import { EditorToolbar } from "./controls/EditorToolbar.js";
 import { SearchBar } from "./controls/SearchBar.js";
 import { DottedEdge } from "./edges/DottedEdge.js";
 import { SolidEdge } from "./edges/SolidEdge.js";
@@ -101,6 +109,18 @@ function pickNodeType(e: Employee, isManager: boolean): NodeTypeName {
   return "employee";
 }
 
+/** Optional editor integration (pair with `useOrgChartEditor`). */
+export type OrgChartEditorApi = {
+  onReparent: (employeeId: string, newManagerId: string | null) => boolean | undefined;
+  onAddVacant?: (input: AddVacantRoleInput) => boolean | undefined;
+  onRemove?: (employeeId: string) => boolean | undefined;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
+  lastError?: string | null;
+};
+
 export type OrgChartProps = {
   data: Employee[];
   mode: "view" | "edit";
@@ -109,7 +129,34 @@ export type OrgChartProps = {
   showMinimap?: boolean;
   showControls?: boolean;
   nodeVariant?: NodeVariant;
+  /** When mode is edit, wire mutations from useOrgChartEditor. */
+  editor?: OrgChartEditorApi;
+  showEditorToolbar?: boolean;
 };
+
+function findDropTargetId(
+  draggedId: string,
+  flowX: number,
+  flowY: number,
+  nodes: Node[],
+  employees: Employee[],
+): string | null {
+  const forbidden = new Set([draggedId, ...getDescendants(employees, draggedId).map((e) => e.id)]);
+
+  // Prefer top-most (highest z) node whose bounds contain the point
+  let hit: string | null = null;
+  for (const n of nodes) {
+    if (forbidden.has(n.id)) continue;
+    const w = n.measured?.width ?? n.width ?? 240;
+    const h = n.measured?.height ?? n.height ?? 120;
+    const x = n.position.x;
+    const y = n.position.y;
+    if (flowX >= x && flowX <= x + w && flowY >= y && flowY <= y + h) {
+      hit = n.id;
+    }
+  }
+  return hit;
+}
 
 function OrgChartInner({
   data,
@@ -119,16 +166,20 @@ function OrgChartInner({
   showMinimap = true,
   showControls = true,
   nodeVariant = "default",
+  editor,
+  showEditorToolbar = true,
 }: OrgChartProps): ReactElement {
+  const isEdit = mode === "edit" && editor !== undefined;
   const { visibleIds, isCollapsed, toggleCollapse } = useOrgChartState(data);
   const { query, setQuery, matchIds } = useSearch(data);
   const { focusedIds, focusedId, setFocus, clearFocus } = useFocusMode(data);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { screenToFlowPosition, getNodes } = useReactFlow();
 
   const onFocus = useCallback((id: string) => setFocus(id), [setFocus]);
   useKeyboardNav({ employees: data, focusedId, onFocus });
 
-  // Global viewer shortcuts: `/` focuses search, `Escape` clears focus mode.
   useEffect(() => {
     function isEditableTarget(el: EventTarget | null): boolean {
       if (!(el instanceof HTMLElement)) return false;
@@ -137,6 +188,12 @@ function OrgChartInner({
       return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
     }
     function handle(event: KeyboardEvent): void {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z" && isEdit) {
+        event.preventDefault();
+        if (event.shiftKey) editor?.onRedo?.();
+        else editor?.onUndo?.();
+        return;
+      }
       if (event.key === "Escape" && focusedId) {
         event.preventDefault();
         clearFocus();
@@ -151,10 +208,17 @@ function OrgChartInner({
           input.select();
         }
       }
+      if (event.key === "Delete" || event.key === "Backspace") {
+        if (isEdit && selectedId && editor?.onRemove && !isEditableTarget(event.target)) {
+          event.preventDefault();
+          editor.onRemove(selectedId);
+          setSelectedId(null);
+        }
+      }
     }
     window.addEventListener("keydown", handle);
     return () => window.removeEventListener("keydown", handle);
-  }, [focusedId, clearFocus, showSearch]);
+  }, [focusedId, clearFocus, showSearch, isEdit, editor, selectedId]);
 
   const visibleData = useMemo(() => data.filter((e) => visibleIds.has(e.id)), [data, visibleIds]);
 
@@ -178,14 +242,13 @@ function OrgChartInner({
           id: n.id,
           type,
           position: n.position,
-          // Explicit size helps MiniMap render node rects before ResizeObserver runs.
           width: n.size.width,
           height: n.size.height,
           sourcePosition: Position.Bottom,
           targetPosition: Position.Top,
-          draggable: false,
+          draggable: isEdit,
           selectable: true,
-          // Keep nodes above the pan pane for hit-testing interactive controls.
+          selected: selectedId === n.id,
           style: { pointerEvents: "all", zIndex: 1 },
           data: {
             employee: n.data,
@@ -203,7 +266,18 @@ function OrgChartInner({
           } satisfies OrgChartNodeData,
         };
       }),
-    [layout.nodes, data, isCollapsed, toggleCollapse, query, matchIds, focusedIds, nodeVariant],
+    [
+      layout.nodes,
+      data,
+      isCollapsed,
+      toggleCollapse,
+      query,
+      matchIds,
+      focusedIds,
+      nodeVariant,
+      isEdit,
+      selectedId,
+    ],
   );
 
   const rfEdges: Edge[] = useMemo(
@@ -213,12 +287,45 @@ function OrgChartInner({
         source: e.source,
         target: e.target,
         type: e.kind,
-        // Smooth-step edges attach top/bottom handles.
         sourceHandle: null,
         targetHandle: null,
       })),
     [layout.edges],
   );
+
+  const onNodeDragStop: OnNodeDrag = useCallback(
+    (event, node) => {
+      if (!isEdit || !editor) return;
+      const point =
+        "clientX" in event
+          ? { x: event.clientX, y: event.clientY }
+          : {
+              x: event.changedTouches?.[0]?.clientX ?? 0,
+              y: event.changedTouches?.[0]?.clientY ?? 0,
+            };
+      const flow = screenToFlowPosition(point);
+      const targetId = findDropTargetId(node.id, flow.x, flow.y, getNodes(), data);
+      if (targetId) {
+        editor.onReparent(node.id, targetId);
+      }
+      // Empty canvas drop: layout snaps back from data-driven positions on next render.
+    },
+    [isEdit, editor, screenToFlowPosition, getNodes, data],
+  );
+
+  const handleAddVacant = useCallback(() => {
+    if (!editor?.onAddVacant) return;
+    const parentId = selectedId ?? data.find((e) => e.managerId === null)?.id ?? null;
+    const title =
+      typeof window !== "undefined"
+        ? window.prompt("Title for vacant role", "Open Role")
+        : "Open Role";
+    if (!title) return;
+    editor.onAddVacant({
+      title,
+      managerId: parentId,
+    });
+  }, [editor, selectedId, data]);
 
   return (
     <div ref={containerRef} style={{ position: "relative", width: "100%", height: "100%" }}>
@@ -227,18 +334,51 @@ function OrgChartInner({
           <SearchBar value={query} onChange={setQuery} />
         </div>
       ) : null}
+      {isEdit && showEditorToolbar && editor ? (
+        <div style={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}>
+          <EditorToolbar
+            canUndo={Boolean(editor.canUndo)}
+            canRedo={Boolean(editor.canRedo)}
+            onUndo={() => {
+              editor.onUndo?.();
+            }}
+            onRedo={() => {
+              editor.onRedo?.();
+            }}
+            onAddVacant={handleAddVacant}
+            {...(editor.onRemove
+              ? {
+                  onRemoveSelected: () => {
+                    if (selectedId) {
+                      editor.onRemove?.(selectedId);
+                      setSelectedId(null);
+                    }
+                  },
+                }
+              : {})}
+            hasSelection={Boolean(selectedId)}
+            error={editor.lastError ?? null}
+          />
+        </div>
+      ) : null}
       <ReactFlow
         nodes={rfNodes}
         edges={rfEdges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
-        nodesDraggable={false}
+        nodesDraggable={isEdit}
         nodesConnectable={false}
-        elementsSelectable={mode === "edit"}
-        // Nodes stay interactive for collapse buttons even in view mode.
+        elementsSelectable
         nodesFocusable
-        onNodeClick={(_, node) => setFocus(node.id)}
-        onPaneClick={clearFocus}
+        onNodeClick={(_, node) => {
+          setFocus(node.id);
+          setSelectedId(node.id);
+        }}
+        onPaneClick={() => {
+          clearFocus();
+          setSelectedId(null);
+        }}
+        {...(isEdit ? { onNodeDragStop } : {})}
         fitView
         fitViewOptions={{ padding: 0.2, minZoom: 0.5, maxZoom: 1.5 }}
         minZoom={0.2}

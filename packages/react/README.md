@@ -1,15 +1,13 @@
 # @canvas/react
 
-React bindings for Canvas: production org chart viewer, people cards, and hooks.
+React bindings for Canvas: `<OrgChart>`, HR card presets, viewer hooks, and editor mode.
 
 ## Install
 
 ```bash
 pnpm add @canvas/react @canvas/core
-# peer: react, react-dom
+# peers: react, react-dom
 ```
-
-Import tokens in your app entry:
 
 ```ts
 import "@canvas/tokens/variables.css";
@@ -25,45 +23,43 @@ import { OrgChart } from "@canvas/react";
   mode="view"
   showSearch
   showMinimap
-  showControls
   nodeVariant="detailed"
 />
 ```
 
-### Props
+### Editor mode
 
-| Prop | Description |
-|------|-------------|
-| `data` | `Employee[]` from `@canvas/core` |
-| `mode` | `"view"` \| `"edit"` (`edit` reserved; viewer ships in v0.1) |
-| `showSearch` | Search bar (name, title, dept, email, location) |
-| `showMinimap` | MiniMap overlay |
-| `showControls` | Zoom / fit controls |
-| `nodeVariant` | Density: `default` \| `detailed` \| `compact` \| `minimal` |
-| `layoutOptions` | Optional layout overrides |
+```tsx
+import { OrgChart, useOrgChartEditor } from "@canvas/react";
+
+const editor = useOrgChartEditor({ initialData: employees });
+
+<OrgChart
+  data={editor.data}
+  mode="edit"
+  editor={{
+    onReparent: editor.reparent,
+    onAddVacant: editor.addVacant,
+    onRemove: editor.remove,
+    onUndo: editor.undo,
+    onRedo: editor.redo,
+    canUndo: editor.canUndo,
+    canRedo: editor.canRedo,
+    lastError: editor.lastError,
+  }}
+/>
+```
+
+See [recipe 05](../../docs/recipes/05-editor-mode.md).
 
 ## Cards
 
-- `EmployeeCard` — default density face
-- `EmployeeCardDetailed` — email, location, badges
-- `EmployeeCardCompact` — dense name/title
-- `EmployeeCardMinimal` — avatar + name
-- `EmployeeBadges` — work mode / employment type / tenure chips
-- `ManagerCard` / `ExecutiveCard` — compose a face + role chrome; accept `variant?: NodeVariant`
-- `VacantRoleCard` — open role placeholder
+`EmployeeCard`, `EmployeeCardDetailed`, `EmployeeCardCompact`, `EmployeeCardMinimal`,
+`ManagerCard`, `ExecutiveCard`, `VacantRoleCard`, `EmployeeBadges`.
 
 ## Hooks
 
-- `useOrgChartState` — collapse / expand visibility
-- `useSearch` — query + match ids
-- `useFocusMode` — focus chain highlighting
-- `useKeyboardNav` — arrow navigation across the tree
-
-## Other exports
-
-- `SearchBar`
-- `SolidEdge` / `DottedEdge`
-- `NodeVariant` type
+`useOrgChartState`, `useSearch`, `useFocusMode`, `useKeyboardNav`, `useOrgChartEditor`.
 
 ## License
 

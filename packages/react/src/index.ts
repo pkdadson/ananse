@@ -24,3 +24,10 @@ export { useOrgChartState, type UseOrgChartState } from "./hooks/useOrgChartStat
 export { useSearch, type UseSearch } from "./hooks/useSearch.js";
 export { useFocusMode, type UseFocusMode } from "./hooks/useFocusMode.js";
 export { useKeyboardNav, type UseKeyboardNavOptions } from "./hooks/useKeyboardNav.js";
+export {
+  useOrgChartEditor,
+  type UseOrgChartEditor,
+  type UseOrgChartEditorOptions,
+} from "./hooks/useOrgChartEditor.js";
+export { EditorToolbar, type EditorToolbarProps } from "./controls/EditorToolbar.js";
+export type { OrgChartEditorApi } from "./OrgChart.js";

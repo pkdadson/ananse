@@ -61,6 +61,7 @@ The chart container needs an explicit height (e.g. `100vh` or a flex child with 
 - **Densities** — `default` | `detailed` | `compact` | `minimal`
 - **Badges** — work mode, employment type, tenure chips on detailed cards
 - **Data adapters** — `parseEmployeesCsv`, `fromHrisJson`, `fromNestedTree` in `@canvas/core`
+- **Editor mode** — drag to reparent, vacant roles, undo/redo, delete (`useOrgChartEditor`)
 
 ## Density variants
 
@@ -88,22 +89,21 @@ pnpm dev:demo
 - [Themed org chart](docs/recipes/02-themed-org-chart.md)
 - [Density and badges](docs/recipes/03-density-and-badges.md)
 - [Import CSV & HRIS](docs/recipes/04-import-csv-and-hris.md)
+- [Editor mode](docs/recipes/05-editor-mode.md)
 
 ## Packages
 
 | Package | Role |
 |---------|------|
-| [`@canvas/core`](packages/core) | Types, Zod schemas, layout, tree/search, CSV/HRIS adapters |
-| [`@canvas/react`](packages/react) | `OrgChart`, cards, edges, hooks |
+| [`@canvas/core`](packages/core) | Types, schemas, layout, tree/search, adapters, edit mutations |
+| [`@canvas/react`](packages/react) | `OrgChart`, cards, hooks, editor toolbar |
 | [`@canvas/tokens`](packages/tokens) | CSS variables + Tailwind preset |
 
 ## Roadmap
 
-Shipped: install docs, density kit, CSV/HRIS adapters.
+Shipped: docs, density kit, CSV/HRIS adapters, **editor mode** (reparent, vacant, undo/redo).
 
-Planned next:
-
-- In-product org chart editor (reparent, vacant roles, undo)
+Possible later: side-panel field editor, multi-select bulk ops, collab.
 
 ## License
 

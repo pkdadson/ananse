@@ -55,6 +55,14 @@ const { employees } = parseEmployeesCsv(csvText);
 
 See [recipe 04](../../docs/recipes/04-import-csv-and-hris.md).
 
+### Edit mutations
+
+- `reparentEmployee(employees, id, newManagerId)` — cycle-safe
+- `addVacantRole(employees, { title, managerId, ... })`
+- `removeEmployee(employees, id)` — children reparent to grandparent
+
+Each returns `{ ok: true, employees }` or `{ ok: false, error }`.
+
 ## Example
 
 ```ts
