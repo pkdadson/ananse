@@ -100,11 +100,7 @@ export function hrisRecordToEmployee(r: HrisRecord): Employee | null {
   if (!id || !name) return null;
 
   const title =
-    typeof r.title === "string"
-      ? r.title
-      : typeof r.jobTitle === "string"
-        ? r.jobTitle
-        : undefined;
+    typeof r.title === "string" ? r.title : typeof r.jobTitle === "string" ? r.jobTitle : undefined;
   const department =
     typeof r.department === "string"
       ? r.department
@@ -147,22 +143,20 @@ export function hrisRecordToEmployee(r: HrisRecord): Employee | null {
 
   const managerId = pickManagerId(r);
 
-  return {
-    id,
-    name,
-    ...(title !== undefined ? { title } : {}),
-    ...(department !== undefined ? { department } : {}),
-    ...(email !== undefined ? { email } : {}),
-    ...(location !== undefined ? { location } : {}),
-    ...(photoUrl !== undefined ? { photoUrl } : {}),
-    ...(tenureYears !== undefined ? { tenureYears } : {}),
-    ...(employmentType !== undefined ? { employmentType } : {}),
-    ...(workMode !== undefined ? { workMode } : {}),
-    ...(managerId !== undefined ? { managerId } : {}),
-    ...(dottedLineManagerIds && dottedLineManagerIds.length > 0
-      ? { dottedLineManagerIds }
-      : {}),
-  };
+  const employee: Employee = { id, name };
+  if (title !== undefined) employee.title = title;
+  if (department !== undefined) employee.department = department;
+  if (email !== undefined) employee.email = email;
+  if (location !== undefined) employee.location = location;
+  if (photoUrl !== undefined) employee.photoUrl = photoUrl;
+  if (tenureYears !== undefined) employee.tenureYears = tenureYears;
+  if (employmentType !== undefined) employee.employmentType = employmentType;
+  if (workMode !== undefined) employee.workMode = workMode;
+  if (managerId !== undefined) employee.managerId = managerId;
+  if (dottedLineManagerIds && dottedLineManagerIds.length > 0) {
+    employee.dottedLineManagerIds = dottedLineManagerIds;
+  }
+  return employee;
 }
 
 export type FromHrisResult = {

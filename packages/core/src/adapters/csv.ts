@@ -16,7 +16,10 @@ const WORK_MODES = new Set<WorkMode>(["onsite", "hybrid", "remote"]);
 
 /** Normalize header keys: "Manager ID" → "managerid", "e-mail" → "email". */
 function normalizeHeader(h: string): string {
-  return h.trim().toLowerCase().replace(/[\s_-]+/g, "");
+  return h
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "");
 }
 
 const HEADER_ALIASES: Record<string, keyof Employee | "dottedlinemanagerids"> = {
@@ -80,7 +83,7 @@ export function parseCsvRows(text: string): string[][] {
   };
 
   while (i < text.length) {
-    const ch = text[i]!;
+    const ch = text.charAt(i);
     if (inQuotes) {
       if (ch === '"') {
         if (text[i + 1] === '"') {
@@ -235,27 +238,29 @@ export function parseEmployeesCsv(
     // If the column is absent entirely: leave managerId unset.
     let managerId: string | null | undefined;
     if (colIndex.has("managerId")) {
-      const idx = colIndex.get("managerId")!;
-      const raw = (cells[idx] ?? "").trim();
+      const idx = colIndex.get("managerId");
+      const raw = (idx === undefined ? "" : (cells[idx] ?? "")).trim();
       managerId = raw === "" || raw.toLowerCase() === "null" ? null : raw;
     }
 
-    const employee: Employee = {
-      id,
-      name,
-      ...(get("title") !== undefined ? { title: get("title") } : {}),
-      ...(get("photoUrl") !== undefined ? { photoUrl: get("photoUrl") } : {}),
-      ...(get("department") !== undefined ? { department: get("department") } : {}),
-      ...(managerId !== undefined ? { managerId } : {}),
-      ...(get("email") !== undefined ? { email: get("email") } : {}),
-      ...(get("location") !== undefined ? { location: get("location") } : {}),
-      ...(tenureYears !== undefined ? { tenureYears } : {}),
-      ...(employmentType !== undefined ? { employmentType } : {}),
-      ...(workMode !== undefined ? { workMode } : {}),
-      ...(dottedLineManagerIds && dottedLineManagerIds.length > 0
-        ? { dottedLineManagerIds }
-        : {}),
-    };
+    const employee: Employee = { id, name };
+    const title = get("title");
+    if (title !== undefined) employee.title = title;
+    const photoUrl = get("photoUrl");
+    if (photoUrl !== undefined) employee.photoUrl = photoUrl;
+    const department = get("department");
+    if (department !== undefined) employee.department = department;
+    if (managerId !== undefined) employee.managerId = managerId;
+    const email = get("email");
+    if (email !== undefined) employee.email = email;
+    const location = get("location");
+    if (location !== undefined) employee.location = location;
+    if (tenureYears !== undefined) employee.tenureYears = tenureYears;
+    if (employmentType !== undefined) employee.employmentType = employmentType;
+    if (workMode !== undefined) employee.workMode = workMode;
+    if (dottedLineManagerIds && dottedLineManagerIds.length > 0) {
+      employee.dottedLineManagerIds = dottedLineManagerIds;
+    }
 
     employees.push(employee);
   });
