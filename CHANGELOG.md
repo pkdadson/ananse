@@ -1,9 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- **Renamed:** `@canvas/{core,react,tokens}` → `@ananse/{core,react,tokens}`. CSS custom properties `--canvas-*` → `--ananse-*`, Tailwind tokens `bg-canvas-*` → `bg-ananse-*`, data attributes `data-canvas-*` → `data-ananse-*`, and TypeScript types `CanvasOrgLabels`/`CanvasChartLabels`/`CanvasHeight` → `AnanseOrgLabels`/`AnanseChartLabels`/`AnanseHeight`. Scripts `canvas-doctor` and `create-canvas-app` are now `ananse-doctor` and `create-ananse-app`.
-
 ## 0.1.0 — 2026-07-30
 
 First installable milestone of the Ananse org-chart kit — expanded into a multi-layout platform.
