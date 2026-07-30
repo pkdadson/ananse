@@ -1,0 +1,78 @@
+name: Bug report
+description: Something is broken or behaves unexpectedly in a published Ananse package.
+title: "[bug]: "
+labels: ["bug", "needs triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. A minimal reproduction is by far the most helpful thing you can include.
+  - type: input
+    id: package
+    attributes:
+      label: Affected package
+      description: e.g. `@ananse/react`, `@ananse/core`, `@ananse/tokens`
+      placeholder: "@ananse/react"
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Package version
+      description: Output of `npm list @ananse/react` (or the affected package).
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: A clear description of what is going wrong.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: |
+        Steps to reproduce, or a link to a minimal StackBlitz / CodeSandbox / repo. The smaller the repro, the faster we can help.
+      placeholder: |
+        1. Render `<OrgChart data={...} />` with the following data...
+        2. Click ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include any error messages from the browser console.
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: React version, browser + version, OS, framework (Next.js, Vite, CRA), SSR yes/no.
+      placeholder: |
+        - React: 19.0.0
+        - Browser: Chrome 141
+        - OS: macOS 14.5
+        - Framework: Next.js 15 (App Router, `ssr: false`)
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I've searched existing issues and this hasn't been reported.
+          required: true
+        - label: I'm on the latest published version of the affected package.
+          required: false

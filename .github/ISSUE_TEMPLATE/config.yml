@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question / discussion
+    url: https://github.com/pkdadson/ananse/discussions
+    about: Ask a usage question, share a demo, or discuss an idea before opening an issue.
+  - name: Security vulnerability
+    url: https://github.com/pkdadson/ananse/security/advisories/new
+    about: Please report vulnerabilities privately — do not open a public issue.

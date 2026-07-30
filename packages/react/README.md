@@ -1,5 +1,10 @@
 # @ananse/react
 
+[![npm](https://img.shields.io/npm/v/@ananse/react.svg)](https://www.npmjs.com/package/@ananse/react)
+[![downloads](https://img.shields.io/npm/dm/@ananse/react.svg)](https://www.npmjs.com/package/@ananse/react)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/@ananse/react)](https://bundlephobia.com/package/@ananse/react)
+[![license](https://img.shields.io/npm/l/@ananse/react.svg)](https://github.com/pkdadson/ananse/blob/main/LICENSE)
+
 **The design-forward React library for org charts, mind maps, and flow builders.**
 
 - `<OrgChart>` — hierarchical org chart with search, focus, densities, and a built-in editor

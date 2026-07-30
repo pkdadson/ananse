@@ -1,0 +1,60 @@
+name: Feature request
+description: Suggest a new capability, API, or improvement.
+title: "[feat]: "
+labels: ["enhancement", "needs triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For open-ended ideas or questions, please use [Discussions](https://github.com/pkdadson/ananse/discussions) instead — it's a better place to iterate before an issue.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the use case or gap you're hitting. What are you trying to build?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed API or behavior
+      description: |
+        A concrete sketch of the API (prop name, hook signature, config shape) is very welcome, even if it changes during discussion.
+      placeholder: |
+        ```tsx
+        <OrgChart
+          data={people}
+          groupBy={(person) => person.department}
+        />
+        ```
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What workarounds have you tried today? What existing APIs got close but not close enough?
+    validations:
+      required: false
+  - type: dropdown
+    id: package
+    attributes:
+      label: Which package?
+      multiple: true
+      options:
+        - "@ananse/react"
+        - "@ananse/core"
+        - "@ananse/tokens"
+        - Docs / recipes
+        - Not sure
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I've searched existing issues and discussions.
+          required: true
+        - label: I've considered whether this could be built on top of the existing API instead of adding one.
+          required: false

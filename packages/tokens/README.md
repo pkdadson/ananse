@@ -1,5 +1,10 @@
 # @ananse/tokens
 
+[![npm](https://img.shields.io/npm/v/@ananse/tokens.svg)](https://www.npmjs.com/package/@ananse/tokens)
+[![downloads](https://img.shields.io/npm/dm/@ananse/tokens.svg)](https://www.npmjs.com/package/@ananse/tokens)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/@ananse/tokens)](https://bundlephobia.com/package/@ananse/tokens)
+[![license](https://img.shields.io/npm/l/@ananse/tokens.svg)](https://github.com/pkdadson/ananse/blob/main/LICENSE)
+
 Design tokens for Ananse: CSS variables and a Tailwind preset.
 
 ## Install

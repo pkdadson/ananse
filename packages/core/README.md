@@ -1,5 +1,10 @@
 # @ananse/core
 
+[![npm](https://img.shields.io/npm/v/@ananse/core.svg)](https://www.npmjs.com/package/@ananse/core)
+[![downloads](https://img.shields.io/npm/dm/@ananse/core.svg)](https://www.npmjs.com/package/@ananse/core)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/@ananse/core)](https://bundlephobia.com/package/@ananse/core)
+[![license](https://img.shields.io/npm/l/@ananse/core.svg)](https://github.com/pkdadson/ananse/blob/main/LICENSE)
+
 Framework-agnostic types, layout, schemas, and tree utilities for Ananse.
 
 ## Install
