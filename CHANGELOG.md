@@ -48,4 +48,4 @@ First installable milestone of the Ananse org-chart kit — expanded into a mult
 
 ### Docs
 - Root README, package READMEs
-- Recipes: quickstart, theming, density, CSV/HRIS, editor mode
+- Recipes: quickstart, theming, density, CSV/HRIS, editor mode, SSR/Next.js, persist & REST API, extensibility, hierarchy beyond people
