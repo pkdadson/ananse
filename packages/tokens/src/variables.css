@@ -8,12 +8,13 @@
   --canvas-node-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
   --canvas-node-shadow-hover: 0 8px 20px -2px rgb(0 0 0 / 0.18);
 
-  --canvas-edge-color: hsl(240 5% 70%);
-  --canvas-edge-width: 1.5px;
+  --canvas-edge-color: hsl(240 6% 48%);
+  --canvas-edge-width: 2px;
   --canvas-edge-highlight: hsl(221 83% 53%);
 
   --canvas-focus-ring: hsl(221 83% 53%);
-  --canvas-selection-bg: hsl(221 83% 53% / 0.1);
+  --canvas-selection-bg: hsl(221 83% 53% / 0.12);
+  --canvas-selection-ring: hsl(221 83% 53%);
 
   --canvas-dept-engineering: hsl(221 83% 53%);
   --canvas-dept-design: hsl(280 65% 60%);
@@ -49,8 +50,25 @@
   --canvas-node-border: hsl(240 5% 20%);
   --canvas-node-text: hsl(0 0% 100%);
   --canvas-node-text-muted: hsl(240 5% 65%);
-  --canvas-edge-color: hsl(240 5% 40%);
+  --canvas-edge-color: hsl(240 5% 55%);
   --canvas-role-vacant-bg: hsl(240 10% 12%);
   --canvas-badge-bg: hsl(240 6% 16%);
   --canvas-badge-text: hsl(240 5% 80%);
+  --canvas-selection-ring: hsl(221 83% 62%);
+}
+
+/* Strong multi-select / selection affordance (React Flow adds .selected) */
+.react-flow__node.selected > div,
+.react-flow__node.selected [data-canvas-card],
+.react-flow__node.selected [data-canvas-role],
+.react-flow__node.selected [data-canvas-mind-node],
+.react-flow__node.selected [data-canvas-flow-node] {
+  outline: 3px solid var(--canvas-selection-ring);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--canvas-selection-bg), var(--canvas-node-shadow-hover);
+}
+
+.react-flow__node.selectable:focus-visible > div {
+  outline: 2px solid var(--canvas-focus-ring);
+  outline-offset: 2px;
 }

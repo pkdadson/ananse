@@ -95,16 +95,17 @@ function ManagerNode({ data }: NodeProps & { data: OrgChartNodeData }): ReactEle
   );
 }
 
-const nodeTypes = {
+// Module-level — avoids React Flow warning #002 (unstable nodeTypes/edgeTypes)
+const orgNodeTypes = {
   employee: EmployeeNode,
   executive: ExecutiveNode,
   vacant: VacantNode,
   manager: ManagerNode,
 };
 
-const edgeTypes = { solid: SolidEdge, dotted: DottedEdge };
+const orgEdgeTypes = { solid: SolidEdge, dotted: DottedEdge };
 
-type NodeTypeName = keyof typeof nodeTypes;
+type NodeTypeName = keyof typeof orgNodeTypes;
 
 function pickNodeType(e: Employee, isManager: boolean): NodeTypeName {
   if (e.meta?.role === "vacant") return "vacant";
@@ -468,157 +469,175 @@ function OrgChartInner({
     });
   }, [editor, selectedId, data]);
 
+  const showChrome = showSearch || (isEdit && showEditorToolbar && editor);
+  const showInspectorPanel =
+    isEdit &&
+    showInspector &&
+    Boolean(editor?.onUpdate) &&
+    selectedEmployee !== null &&
+    selectedIds.length === 1;
+
   return (
-    <div ref={containerRef} style={{ position: "relative", width: "100%", height: "100%" }}>
-      {showSearch ? (
-        <div style={{ position: "absolute", top: 12, left: 12, zIndex: 10 }}>
-          <SearchBar value={query} onChange={setQuery} matchCount={matchIds.size} />
-        </div>
-      ) : null}
-      {isEdit && showEditorToolbar && editor ? (
+    <div
+      ref={containerRef}
+      data-canvas-orgchart
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        height: "100%",
+        minHeight: 0,
+      }}
+    >
+      {/* Chrome strip reserves layout space — never overlays cards */}
+      {showChrome ? (
         <div
+          data-canvas-org-chrome
           style={{
-            position: "absolute",
-            top: showSearch ? 56 : 12,
-            left: 12,
-            right: 12,
-            zIndex: 10,
+            flexShrink: 0,
             display: "flex",
-            justifyContent: "flex-end",
-            pointerEvents: "none",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 8,
+            padding: "8px 12px",
+            borderBottom: "1px solid var(--canvas-node-border)",
+            background: "var(--canvas-node-bg)",
+            zIndex: 10,
           }}
         >
-          <div style={{ pointerEvents: "auto", maxWidth: "100%", overflowX: "auto" }}>
-            <EditorToolbar
-              canUndo={Boolean(editor.canUndo)}
-              canRedo={Boolean(editor.canRedo)}
-              onUndo={() => {
-                editor.onUndo?.();
+          {showSearch ? (
+            <SearchBar value={query} onChange={setQuery} matchCount={matchIds.size} />
+          ) : null}
+          {isEdit && showEditorToolbar && editor ? (
+            <div style={{ marginLeft: "auto", maxWidth: "100%", overflowX: "auto" }}>
+              <EditorToolbar
+                canUndo={Boolean(editor.canUndo)}
+                canRedo={Boolean(editor.canRedo)}
+                onUndo={() => {
+                  editor.onUndo?.();
+                }}
+                onRedo={() => {
+                  editor.onRedo?.();
+                }}
+                onAddVacant={handleAddVacant}
+                {...(editor.onRemove
+                  ? {
+                      onRemoveSelected: () => {
+                        if (selectedIds.length === 0) return;
+                        for (const id of [...selectedIds].reverse()) {
+                          editor.onRemove?.(id);
+                        }
+                        setSelectedIds([]);
+                      },
+                    }
+                  : {})}
+                hasSelection={selectedIds.length > 0}
+                selectionCount={selectedIds.length}
+                onExportJson={() => {
+                  void import("@canvas/core").then(({ downloadJson }) => {
+                    downloadJson("org-chart.json", data);
+                  });
+                }}
+                error={editor.lastError ?? null}
+              />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
+        {showInspectorPanel && selectedEmployee && editor ? (
+          <div style={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}>
+            <InspectorPanel
+              employee={selectedEmployee}
+              onChange={(patch) => {
+                editor.onUpdate?.(selectedEmployee.id, patch);
               }}
-              onRedo={() => {
-                editor.onRedo?.();
-              }}
-              onAddVacant={handleAddVacant}
-              {...(editor.onRemove
-                ? {
-                    onRemoveSelected: () => {
-                      if (selectedIds.length === 0) return;
-                      for (const id of [...selectedIds].reverse()) {
-                        editor.onRemove?.(id);
-                      }
-                      setSelectedIds([]);
-                    },
-                  }
-                : {})}
-              hasSelection={selectedIds.length > 0}
-              selectionCount={selectedIds.length}
-              onExportJson={() => {
-                void import("@canvas/core").then(({ downloadJson }) => {
-                  downloadJson("org-chart.json", data);
-                });
-              }}
-              error={editor.lastError ?? null}
+              onClose={() => setSelectedIds([])}
             />
           </div>
-        </div>
-      ) : null}
-      {isEdit &&
-      showInspector &&
-      editor?.onUpdate &&
-      selectedEmployee &&
-      selectedIds.length === 1 ? (
-        <div style={{ position: "absolute", top: showSearch ? 100 : 56, right: 12, zIndex: 10 }}>
-          <InspectorPanel
-            employee={selectedEmployee}
-            onChange={(patch) => {
-              editor.onUpdate?.(selectedEmployee.id, patch);
-            }}
-            onClose={() => setSelectedIds([])}
-          />
-        </div>
-      ) : null}
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        nodesDraggable={isEdit}
-        nodesConnectable={false}
-        elementsSelectable
-        nodesFocusable
-        multiSelectionKeyCode="Shift"
-        selectionOnDrag={isEdit}
-        selectNodesOnDrag={false}
-        onNodeClick={(event, node) => {
-          setFocus(node.id);
-          if (event.shiftKey) {
-            setSelectedIds((prev) =>
-              prev.includes(node.id) ? prev.filter((id) => id !== node.id) : [...prev, node.id],
-            );
-          } else {
-            setSelectedIds([node.id]);
-          }
-        }}
-        onSelectionChange={({ nodes: sel }) => {
-          if (!isEdit) return;
-          // Marquee multi-select → sync. Skip no-ops to avoid setState loops.
-          if (sel.length <= 1) return;
-          const ids = sel.map((n) => n.id);
-          setSelectedIds((prev) => {
-            if (prev.length === ids.length && prev.every((id, i) => id === ids[i])) return prev;
-            const prevSet = new Set(prev);
-            if (ids.length === prevSet.size && ids.every((id) => prevSet.has(id))) return prev;
-            return ids;
-          });
-        }}
-        onPaneClick={() => {
-          clearFocus();
-          setSelectedIds([]);
-        }}
-        {...(isEdit ? { onNodeDragStop } : {})}
-        fitView
-        fitViewOptions={{ padding: 0.15, minZoom: 0.1, maxZoom: 1.5 }}
-        minZoom={0.1}
-        maxZoom={2}
-        onlyRenderVisibleElements
-        proOptions={{ hideAttribution: true }}
-        defaultEdgeOptions={{
-          type: "solid",
-          style: { stroke: "var(--canvas-edge-color)", strokeWidth: 1.5 },
-        }}
-      >
-        <Background gap={20} size={1} color="var(--canvas-node-border)" />
-        {showControls ? (
-          <Controls
-            showInteractive={false}
-            fitViewOptions={{ padding: 0.15, minZoom: 0.1, maxZoom: 1.5 }}
-          />
         ) : null}
-        {showMinimap ? (
-          <MiniMap
-            pannable
-            zoomable
-            nodeStrokeWidth={3}
-            nodeColor={(node) => {
-              const role = (node.data as OrgChartNodeData | undefined)?.employee?.meta?.role;
-              if (role === "vacant") return "#a1a1aa";
-              if (role === "executive" || node.type === "executive") return "#f59e0b";
-              if (node.type === "manager") return "#3b82f6";
-              return "#94a3b8";
-            }}
-            nodeStrokeColor="#64748b"
-            maskColor="rgb(15, 23, 42, 0.08)"
-            style={{
-              background: "var(--canvas-node-bg)",
-              // When inspector is open, push minimap left of it (inspector is 256px wide + 12px gap)
-              right:
-                isEdit && showInspector && editor?.onUpdate && selectedEmployee ? 288 : undefined,
-            }}
-          />
-        ) : null}
-      </ReactFlow>
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          nodeTypes={orgNodeTypes}
+          edgeTypes={orgEdgeTypes}
+          nodesDraggable={isEdit}
+          nodesConnectable={false}
+          elementsSelectable
+          nodesFocusable
+          multiSelectionKeyCode="Shift"
+          selectionOnDrag={isEdit}
+          selectNodesOnDrag={false}
+          onNodeClick={(event, node) => {
+            setFocus(node.id);
+            if (event.shiftKey) {
+              setSelectedIds((prev) =>
+                prev.includes(node.id) ? prev.filter((id) => id !== node.id) : [...prev, node.id],
+              );
+            } else {
+              setSelectedIds([node.id]);
+            }
+          }}
+          onSelectionChange={({ nodes: sel }) => {
+            if (!isEdit) return;
+            // Marquee multi-select → sync. Skip no-ops to avoid setState loops.
+            if (sel.length <= 1) return;
+            const ids = sel.map((n) => n.id);
+            setSelectedIds((prev) => {
+              if (prev.length === ids.length && prev.every((id, i) => id === ids[i])) return prev;
+              const prevSet = new Set(prev);
+              if (ids.length === prevSet.size && ids.every((id) => prevSet.has(id))) return prev;
+              return ids;
+            });
+          }}
+          onPaneClick={() => {
+            clearFocus();
+            setSelectedIds([]);
+          }}
+          {...(isEdit ? { onNodeDragStop } : {})}
+          fitView
+          fitViewOptions={{ padding: 0.15, minZoom: 0.1, maxZoom: 1.5 }}
+          minZoom={0.1}
+          maxZoom={2}
+          onlyRenderVisibleElements
+          proOptions={{ hideAttribution: true }}
+          defaultEdgeOptions={{
+            type: "solid",
+            style: { stroke: "var(--canvas-edge-color)", strokeWidth: 2 },
+          }}
+        >
+          <Background gap={20} size={1} color="var(--canvas-node-border)" />
+          {showControls ? (
+            <Controls
+              showInteractive={false}
+              fitViewOptions={{ padding: 0.15, minZoom: 0.1, maxZoom: 1.5 }}
+            />
+          ) : null}
+          {showMinimap ? (
+            <MiniMap
+              pannable
+              zoomable
+              nodeStrokeWidth={3}
+              nodeColor={(node) => {
+                const role = (node.data as OrgChartNodeData | undefined)?.employee?.meta?.role;
+                if (role === "vacant") return "#a1a1aa";
+                if (role === "executive" || node.type === "executive") return "#f59e0b";
+                if (node.type === "manager") return "#3b82f6";
+                return "#94a3b8";
+              }}
+              nodeStrokeColor="#64748b"
+              maskColor="rgb(15, 23, 42, 0.08)"
+              style={{
+                background: "var(--canvas-node-bg)",
+                right: showInspectorPanel ? 288 : undefined,
+              }}
+            />
+          ) : null}
+        </ReactFlow>
+      </div>
     </div>
   );
 }

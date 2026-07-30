@@ -5,6 +5,7 @@ import {
   Controls,
   type Edge,
   Handle,
+  MarkerType,
   type Node,
   type NodeProps,
   Position,
@@ -57,21 +58,76 @@ function FlowNodeView({ data }: NodeProps & { data: FlowData }): ReactElement {
   );
 }
 
-const nodeTypes = { flow: FlowNodeView };
-const edgeTypes = { solid: SolidEdge };
+// Module-level — avoids React Flow warning #002
+const flowNodeTypes = { flow: FlowNodeView };
+const flowEdgeTypes = { solid: SolidEdge };
 
 export type FlowBuilderProps = {
   nodes: FlowNode[];
   links: FlowLink[];
   layoutOptions?: FlowLayoutOptions;
   showControls?: boolean;
+  showLegend?: boolean;
 };
+
+const LEGEND_ITEMS: { kind: keyof typeof KIND_STYLE; label: string }[] = [
+  { kind: "start", label: "Start" },
+  { kind: "task", label: "Task" },
+  { kind: "decision", label: "Decision" },
+  { kind: "end", label: "End" },
+];
+
+function FlowLegend(): ReactElement {
+  return (
+    <div
+      aria-label="Flow node legend"
+      style={{
+        position: "absolute",
+        top: 12,
+        left: 12,
+        zIndex: 10,
+        display: "flex",
+        gap: 12,
+        alignItems: "center",
+        flexWrap: "wrap",
+        padding: "8px 12px",
+        borderRadius: 8,
+        background: "var(--canvas-node-bg)",
+        border: "1px solid var(--canvas-node-border)",
+        boxShadow: "var(--canvas-node-shadow)",
+        fontSize: 12,
+        color: "var(--canvas-node-text)",
+      }}
+    >
+      {LEGEND_ITEMS.map((item) => {
+        const style = KIND_STYLE[item.kind];
+        if (!style) return null;
+        return (
+          <span key={item.kind} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <span
+              aria-hidden="true"
+              style={{
+                width: 14,
+                height: 14,
+                borderRadius: style.radius >= 999 ? 999 : 3,
+                border: `2px solid ${style.border}`,
+                background: "transparent",
+              }}
+            />
+            {item.label}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
 
 function FlowBuilderInner({
   nodes: flowNodes,
   links,
   layoutOptions,
   showControls = true,
+  showLegend = false,
 }: FlowBuilderProps): ReactElement {
   const layout = useMemo(
     () => layoutFlow(flowNodes, links, layoutOptions),
@@ -102,6 +158,27 @@ function FlowBuilderInner({
         target: e.target,
         type: "solid",
         label: e.label,
+        style: {
+          stroke: "var(--canvas-edge-color)",
+          strokeWidth: 2.5,
+        },
+        labelStyle: {
+          fill: "var(--canvas-node-text)",
+          fontWeight: 600,
+          fontSize: 11,
+        },
+        labelBgStyle: {
+          fill: "var(--canvas-node-bg)",
+          fillOpacity: 0.95,
+        },
+        labelBgPadding: [4, 6] as [number, number],
+        labelBgBorderRadius: 4,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          width: 16,
+          height: 16,
+          color: "var(--canvas-edge-color)",
+        },
       })),
     [layout.edges],
   );
@@ -115,19 +192,24 @@ function FlowBuilderInner({
   }, [initialNodes, initialEdges, setNodes, setEdges]);
 
   return (
-    <div style={{ width: "100%", height: "100%" }} data-canvas-flowbuilder>
+    <div style={{ position: "relative", width: "100%", height: "100%" }} data-canvas-flowbuilder>
+      {showLegend ? <FlowLegend /> : null}
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
+        nodeTypes={flowNodeTypes}
+        edgeTypes={flowEdgeTypes}
         fitView
         minZoom={0.2}
         maxZoom={2}
         proOptions={{ hideAttribution: true }}
         onlyRenderVisibleElements
+        defaultEdgeOptions={{
+          type: "solid",
+          style: { stroke: "var(--canvas-edge-color)", strokeWidth: 2.5 },
+        }}
       >
         <Background gap={20} size={1} color="var(--canvas-node-border)" />
         {showControls ? <Controls showInteractive={false} /> : null}

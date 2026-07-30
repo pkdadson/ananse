@@ -15,12 +15,15 @@ export const sampleMindMap: MindNode[] = [
   },
   { id: "ic", label: "IC track", parentId: "root", color: "var(--canvas-dept-engineering)" },
   { id: "mgr", label: "Manager track", parentId: "root", color: "var(--canvas-dept-product)" },
+  { id: "spec", label: "Specialist", parentId: "root", color: "var(--canvas-dept-design)" },
   { id: "sde1", label: "SDE I", parentId: "ic" },
   { id: "sde2", label: "SDE II", parentId: "ic" },
   { id: "senior", label: "Senior", parentId: "ic" },
   { id: "staff", label: "Staff", parentId: "senior" },
   { id: "em", label: "Eng Manager", parentId: "mgr" },
   { id: "dir", label: "Director", parentId: "mgr" },
+  { id: "arch", label: "Architect", parentId: "spec" },
+  { id: "sec", label: "Security", parentId: "spec" },
 ];
 
 export const sampleFlowNodes: FlowNode[] = [

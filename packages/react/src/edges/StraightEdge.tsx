@@ -1,15 +1,13 @@
-import { BaseEdge, type EdgeProps, getSmoothStepPath } from "@xyflow/react";
+import { BaseEdge, type EdgeProps, getStraightPath } from "@xyflow/react";
 import type { ReactElement } from "react";
 
-export function SolidEdge(props: EdgeProps): ReactElement {
-  const [path] = getSmoothStepPath({
+/** Straight connector — better for radial mind maps than stepped edges. */
+export function StraightEdge(props: EdgeProps): ReactElement {
+  const [path] = getStraightPath({
     sourceX: props.sourceX,
     sourceY: props.sourceY,
     targetX: props.targetX,
     targetY: props.targetY,
-    sourcePosition: props.sourcePosition,
-    targetPosition: props.targetPosition,
-    borderRadius: 8,
   });
   return (
     <BaseEdge
@@ -17,7 +15,7 @@ export function SolidEdge(props: EdgeProps): ReactElement {
       path={path}
       style={{
         stroke: "var(--canvas-edge-color)",
-        strokeWidth: 2,
+        strokeWidth: 2.25,
         ...props.style,
       }}
     />

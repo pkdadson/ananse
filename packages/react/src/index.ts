@@ -22,6 +22,7 @@ export { ExecutiveCard, type ExecutiveCardProps } from "./nodes/ExecutiveCard.js
 export { VacantRoleCard, type VacantRoleCardProps } from "./nodes/VacantRoleCard.js";
 export { SolidEdge } from "./edges/SolidEdge.js";
 export { DottedEdge } from "./edges/DottedEdge.js";
+export { StraightEdge } from "./edges/StraightEdge.js";
 export { SearchBar, type SearchBarProps } from "./controls/SearchBar.js";
 export { useOrgChartState, type UseOrgChartState } from "./hooks/useOrgChartState.js";
 export { useSearch, type UseSearch } from "./hooks/useSearch.js";
