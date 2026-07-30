@@ -1,4 +1,4 @@
-import type { Employee } from "@canvas/core";
+import type { Employee } from "@ananse/core";
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { useSearch } from "../src/hooks/useSearch.js";

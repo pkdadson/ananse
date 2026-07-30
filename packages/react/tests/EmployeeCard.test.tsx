@@ -28,8 +28,8 @@ describe("EmployeeCard", () => {
     const { container } = render(
       <EmployeeCard data={{ id: "1", name: "Ada", department: "engineering" }} />,
     );
-    const chip = container.querySelector("[data-canvas-dept-chip]");
+    const chip = container.querySelector("[data-ananse-dept-chip]");
     expect(chip).not.toBeNull();
-    expect(chip?.getAttribute("data-canvas-dept-chip")).toBe("engineering");
+    expect(chip?.getAttribute("data-ananse-dept-chip")).toBe("engineering");
   });
 });

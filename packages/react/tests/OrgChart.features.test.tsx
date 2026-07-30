@@ -1,4 +1,4 @@
-import type { Employee } from "@canvas/core";
+import type { Employee } from "@ananse/core";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
@@ -23,7 +23,7 @@ describe("<OrgChart> features", () => {
   it("dims unmatched nodes when a search query has matches", async () => {
     render(<OrgChart data={data} mode="view" showSearch />);
     await userEvent.type(screen.getByRole("searchbox"), "grace");
-    const ada = screen.getByText("Ada Lovelace").closest("[data-canvas-search-dim]");
-    expect(ada?.getAttribute("data-canvas-search-dim")).toBe("true");
+    const ada = screen.getByText("Ada Lovelace").closest("[data-ananse-search-dim]");
+    expect(ada?.getAttribute("data-ananse-search-dim")).toBe("true");
   });
 });

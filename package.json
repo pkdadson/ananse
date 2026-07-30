@@ -1,8 +1,8 @@
 {
-  "name": "canvas-lib",
+  "name": "ananse",
   "private": true,
   "version": "0.1.0",
-  "description": "Modern, design-forward canvas library for hierarchies and flows.",
+  "description": "Modern, design-forward library for hierarchies and flows.",
   "packageManager": "pnpm@9.12.0",
   "engines": {
     "node": ">=20"
@@ -13,10 +13,10 @@
     "lint": "biome check .",
     "format": "biome format --write .",
     "dev:demo": "pnpm --filter=demo dev",
-    "publish:check": "pnpm test && pnpm build && pnpm lint && pnpm --filter=@canvas/core publish --dry-run --no-git-checks && pnpm --filter=@canvas/react publish --dry-run --no-git-checks && pnpm --filter=@canvas/tokens publish --dry-run --no-git-checks",
-    "bench": "pnpm --filter=@canvas/core build && node scripts/bench-layout.mjs",
-    "doctor": "node scripts/canvas-doctor.mjs",
-    "create-app": "node scripts/create-canvas-app.mjs"
+    "publish:check": "pnpm test && pnpm build && pnpm lint && pnpm --filter=@ananse/core publish --dry-run --no-git-checks && pnpm --filter=@ananse/react publish --dry-run --no-git-checks && pnpm --filter=@ananse/tokens publish --dry-run --no-git-checks",
+    "bench": "pnpm --filter=@ananse/core build && node scripts/bench-layout.mjs",
+    "doctor": "node scripts/ananse-doctor.mjs",
+    "create-app": "node scripts/create-ananse-app.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",

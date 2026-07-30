@@ -1,8 +1,8 @@
-import canvasPreset from "@canvas/tokens/tailwind";
+import anansePreset from "@ananse/tokens/tailwind";
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  presets: [canvasPreset as Config],
+  presets: [anansePreset as Config],
   content: [
     "./index.html",
     "./src/**/*.{ts,tsx}",

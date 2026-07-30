@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Canvas DX doctor — quick environment + data checks.
+ * Ananse DX doctor — quick environment + data checks.
  *
- *   node scripts/canvas-doctor.mjs
- *   node scripts/canvas-doctor.mjs --data ./people.json
+ *   node scripts/ananse-doctor.mjs
+ *   node scripts/ananse-doctor.mjs --data ./people.json
  *   pnpm doctor
  */
 
@@ -32,11 +32,11 @@ function bad(msg) {
   failed += 1;
 }
 
-console.log("\nCanvas doctor\n");
+console.log("\nAnanse doctor\n");
 
 // Packages present
-for (const pkg of ["@canvas/core", "@canvas/react", "@canvas/tokens"]) {
-  const p = join(root, "packages", pkg.replace("@canvas/", ""), "package.json");
+for (const pkg of ["@ananse/core", "@ananse/react", "@ananse/tokens"]) {
+  const p = join(root, "packages", pkg.replace("@ananse/", ""), "package.json");
   if (existsSync(p)) ok(`${pkg} package found`);
   else bad(`${pkg} package missing at ${p}`);
 }
@@ -44,8 +44,8 @@ for (const pkg of ["@canvas/core", "@canvas/react", "@canvas/tokens"]) {
 // Built dist?
 for (const name of ["core", "react"]) {
   const dist = join(root, "packages", name, "dist", "index.js");
-  if (existsSync(dist)) ok(`@canvas/${name} dist built`);
-  else warn(`@canvas/${name} not built — run: pnpm build`);
+  if (existsSync(dist)) ok(`@ananse/${name} dist built`);
+  else warn(`@ananse/${name} not built — run: pnpm build`);
 }
 
 // Node version
@@ -61,7 +61,7 @@ if (dataPath) {
       join(root, "packages/core/dist/index.js")
     ).catch(async () => {
       // try source via vitest-less dynamic — fall back message
-      throw new Error("Build @canvas/core first: pnpm --filter=@canvas/core build");
+      throw new Error("Build @ananse/core first: pnpm --filter=@ananse/core build");
     });
     const result = loadOrg({ type: "employees", data: raw });
     if (result.ok) {
@@ -77,7 +77,7 @@ if (dataPath) {
 
 console.log(
   failed === 0
-    ? '\nAll clear. Quickstart:\n\n  import { OrgChart } from "@canvas/react";\n  <OrgChart defaultData={people} height="100vh" showSearch />\n'
+    ? '\nAll clear. Quickstart:\n\n  import { OrgChart } from "@ananse/react";\n  <OrgChart defaultData={people} height="100vh" showSearch />\n'
     : `\n${failed} issue(s) found.\n`,
 );
 process.exit(failed === 0 ? 0 : 1);

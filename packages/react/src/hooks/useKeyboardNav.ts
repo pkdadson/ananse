@@ -1,5 +1,5 @@
-import type { Employee } from "@canvas/core";
-import { getAncestors, getDirectReports } from "@canvas/core";
+import type { Employee } from "@ananse/core";
+import { getAncestors, getDirectReports } from "@ananse/core";
 import { useEffect } from "react";
 
 export type UseKeyboardNavOptions = {

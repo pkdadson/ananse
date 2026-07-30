@@ -1,5 +1,5 @@
-import type { Employee } from "@canvas/core";
-import { searchEmployees } from "@canvas/core";
+import type { Employee } from "@ananse/core";
+import { searchEmployees } from "@ananse/core";
 import { useMemo, useState } from "react";
 
 export type UseSearch = {

@@ -5,7 +5,7 @@ Get a working org chart in under 10 minutes.
 ## 1. Install
 
 ```bash
-pnpm add @canvas/react @canvas/core @canvas/tokens
+pnpm add @ananse/react @ananse/core @ananse/tokens
 ```
 
 Peers: `react` and `react-dom` **≥ 18.2**.
@@ -15,13 +15,13 @@ Peers: `react` and `react-dom` **≥ 18.2**.
 Tokens auto-inject on first chart render. Optional override:
 
 ```ts
-import "@canvas/tokens/variables.css";
+import "@ananse/tokens/variables.css";
 ```
 
 ## 3. Five lines
 
 ```tsx
-import { OrgChart } from "@canvas/react";
+import { OrgChart } from "@ananse/react";
 
 const data = [
   { id: "ceo", name: "Ada Lovelace", title: "CEO", managerId: null },
@@ -38,7 +38,7 @@ export function App() {
 
 ```tsx
 import { useState } from "react";
-import { OrgChart } from "@canvas/react";
+import { OrgChart } from "@ananse/react";
 
 export function Editable() {
   const [people, setPeople] = useState(data);
@@ -50,4 +50,4 @@ export function Editable() {
 
 ## Blank chart?
 
-Pass `height="100vh"` (or any CSS size). Canvas warns in development when the container height is ~0.
+Pass `height="100vh"` (or any CSS size). Ananse warns in development when the container height is ~0.

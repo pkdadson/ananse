@@ -1,4 +1,4 @@
-import type { Employee } from "@canvas/core";
+import type { Employee } from "@ananse/core";
 
 export const sampleCompany: Employee[] = [
   {

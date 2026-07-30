@@ -17,14 +17,14 @@ export default defineConfig({
   resolve: {
     // Prefer package source over dist so HMR never serves a stale/missing export.
     alias: {
-      "@canvas/react": path.resolve(root, "../../packages/react/src/index.ts"),
-      "@canvas/core": path.resolve(root, "../../packages/core/src/index.ts"),
-      "@canvas/tokens": path.resolve(root, "../../packages/tokens/src"),
+      "@ananse/react": path.resolve(root, "../../packages/react/src/index.ts"),
+      "@ananse/core": path.resolve(root, "../../packages/core/src/index.ts"),
+      "@ananse/tokens": path.resolve(root, "../../packages/tokens/src"),
     },
     dedupe: ["react", "react-dom"],
   },
   optimizeDeps: {
     // Keep workspace packages out of prebundle so aliases always win.
-    exclude: ["@canvas/react", "@canvas/core", "@canvas/tokens"],
+    exclude: ["@ananse/react", "@ananse/core", "@ananse/tokens"],
   },
 });

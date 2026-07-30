@@ -1,11 +1,11 @@
-# @canvas/core
+# @ananse/core
 
-Framework-agnostic types, layout, schemas, and tree utilities for Canvas.
+Framework-agnostic types, layout, schemas, and tree utilities for Ananse.
 
 ## Install
 
 ```bash
-pnpm add @canvas/core
+pnpm add @ananse/core
 ```
 
 ## What you get
@@ -25,7 +25,7 @@ pnpm add @canvas/core
 Validate inbound HR data before rendering:
 
 ```ts
-import { orgChartSchema } from "@canvas/core";
+import { orgChartSchema } from "@ananse/core";
 
 const parsed = orgChartSchema.safeParse(rawRows);
 ```
@@ -46,7 +46,7 @@ const parsed = orgChartSchema.safeParse(rawRows);
 - `fromNestedTree(roots)` — nested `children`/`reports` → flat `managerId` graph
 
 ```ts
-import { parseEmployeesCsv, fromHrisJson, fromNestedTree } from "@canvas/core";
+import { parseEmployeesCsv, fromHrisJson, fromNestedTree } from "@ananse/core";
 
 const { employees } = parseEmployeesCsv(csvText);
 // or fromHrisJson(await res.json())
@@ -66,7 +66,7 @@ Each returns `{ ok: true, employees }` or `{ ok: false, error }`.
 ## Example
 
 ```ts
-import { layoutOrgChart, searchEmployees } from "@canvas/core";
+import { layoutOrgChart, searchEmployees } from "@ananse/core";
 
 const layout = layoutOrgChart(employees, { direction: "TB" });
 const hits = searchEmployees(employees, "grace@");

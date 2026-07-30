@@ -1,7 +1,7 @@
 {
-  "name": "@canvas/tokens",
+  "name": "@ananse/tokens",
   "version": "0.1.0",
-  "description": "CSS variables and Tailwind preset for the Canvas design system.",
+  "description": "CSS variables and Tailwind preset for the Ananse design system.",
   "license": "MIT",
   "type": "module",
   "main": "./src/index.ts",

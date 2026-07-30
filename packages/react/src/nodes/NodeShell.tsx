@@ -14,8 +14,8 @@ export type NodeShellProps = {
 export function NodeShell({ children, searchDim, dim }: NodeShellProps): ReactElement {
   return (
     <div
-      className="canvas-org-node"
-      data-canvas-search-dim={searchDim ? "true" : "false"}
+      className="ananse-org-node"
+      data-ananse-search-dim={searchDim ? "true" : "false"}
       style={{
         position: "relative",
         pointerEvents: "all",

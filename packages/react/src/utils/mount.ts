@@ -1,9 +1,9 @@
-import { type CSSProperties, type RefObject, useEffect, useRef } from "react";
+import { type CSSProperties, type RefObject, useEffect, useRef, useState } from "react";
 
-export type CanvasHeight = number | string;
+export type AnanseHeight = number | string;
 
 /** Resolve height prop to a CSS value. */
-export function resolveHeight(height?: CanvasHeight): string | undefined {
+export function resolveHeight(height?: AnanseHeight): string | undefined {
   if (height === undefined) return undefined;
   return typeof height === "number" ? `${height}px` : height;
 }
@@ -15,7 +15,7 @@ export function resolveHeight(height?: CanvasHeight): string | undefined {
  */
 export function useZeroHeightWarning(
   ref: RefObject<HTMLElement | null>,
-  label = "Canvas",
+  label = "Ananse",
   skip = false,
 ): void {
   const warned = useRef(false);
@@ -37,9 +37,30 @@ export function useZeroHeightWarning(
   }, [ref, label, skip]);
 }
 
+/**
+ * Track container width via ResizeObserver. Returns null until first measure.
+ * Used to make fit-view and layout decisions responsive without relying on
+ * window.matchMedia (works when the chart is embedded in a smaller region).
+ */
+export function useContainerWidth(ref: RefObject<HTMLElement | null>): number | null {
+  const [width, setWidth] = useState<number | null>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    setWidth(el.getBoundingClientRect().width);
+    const ro = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) setWidth(entry.contentRect.width);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [ref]);
+  return width;
+}
+
 export const DEFAULT_CHART_MIN_HEIGHT = 480;
 
-export function chartShellStyle(height?: CanvasHeight, style?: CSSProperties): CSSProperties {
+export function chartShellStyle(height?: AnanseHeight, style?: CSSProperties): CSSProperties {
   const resolved = resolveHeight(height);
   return {
     width: "100%",

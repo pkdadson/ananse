@@ -3,8 +3,8 @@
 ## 15-line localStorage prototype
 
 ```tsx
-import { OrgChart } from "@canvas/react";
-import { loadOrgFromStorage } from "@canvas/core";
+import { OrgChart } from "@ananse/react";
+import { loadOrgFromStorage } from "@ananse/core";
 
 const KEY = "my-org-v1";
 const seed = loadOrgFromStorage(KEY) ?? [
@@ -30,8 +30,8 @@ export function App() {
 
 ```tsx
 import { useMemo, useState } from "react";
-import { OrgChart } from "@canvas/react";
-import type { Employee, OrgMutationEvent } from "@canvas/core";
+import { OrgChart } from "@ananse/react";
+import type { Employee, OrgMutationEvent } from "@ananse/core";
 
 function useDebouncedSave(url: string, ms = 500) {
   return useMemo(() => {

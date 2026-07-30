@@ -5,8 +5,8 @@ Turn spreadsheet or HRIS exports into `Employee[]` for `<OrgChart>` without hand
 ## CSV
 
 ```ts
-import { parseEmployeesCsv, orgChartSchema } from "@canvas/core";
-import { OrgChart } from "@canvas/react";
+import { parseEmployeesCsv, orgChartSchema } from "@ananse/core";
+import { OrgChart } from "@ananse/react";
 
 const csv = await fetch("/org.csv").then((r) => r.text());
 const { employees, warnings } = parseEmployeesCsv(csv);
@@ -49,7 +49,7 @@ Quoted commas are supported (`"Lovelace, Ada"`).
 ## Flat HRIS JSON
 
 ```ts
-import { fromHrisJson } from "@canvas/core";
+import { fromHrisJson } from "@ananse/core";
 
 const payload = await fetch("/hris-people.json").then((r) => r.json());
 const { employees, warnings } = fromHrisJson(payload);
@@ -62,7 +62,7 @@ Maps common shapes: `employeeId`, `fullName`, `jobTitle`, `manager_id` / `report
 If your API returns a hierarchy with `children` / `reports` / `directReports`:
 
 ```ts
-import { fromNestedTree } from "@canvas/core";
+import { fromNestedTree } from "@ananse/core";
 
 const tree = await fetch("/org-tree.json").then((r) => r.json());
 const { employees } = fromNestedTree(Array.isArray(tree) ? tree : [tree]);

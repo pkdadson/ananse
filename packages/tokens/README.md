@@ -1,11 +1,11 @@
-# @canvas/tokens
+# @ananse/tokens
 
-Design tokens for Canvas: CSS variables and a Tailwind preset.
+Design tokens for Ananse: CSS variables and a Tailwind preset.
 
 ## Install
 
 ```bash
-pnpm add @canvas/tokens
+pnpm add @ananse/tokens
 ```
 
 ## CSS variables
@@ -13,15 +13,15 @@ pnpm add @canvas/tokens
 Import once at the root of your app:
 
 ```ts
-import "@canvas/tokens/variables.css";
+import "@ananse/tokens/variables.css";
 ```
 
 Includes:
 
-- Surface: `--canvas-bg`, `--canvas-node-bg`, `--canvas-node-border`, text colors, radius, shadows
-- Edges: `--canvas-edge-color`, `--canvas-edge-highlight`
+- Surface: `--ananse-bg`, `--ananse-node-bg`, `--ananse-node-border`, text colors, radius, shadows
+- Edges: `--ananse-edge-color`, `--ananse-edge-highlight`
 - Focus / selection rings
-- Department accent colors (`--canvas-dept-*`)
+- Department accent colors (`--ananse-dept-*`)
 - Role styles (executive, vacant)
 - Badge colors: remote, hybrid, onsite, contractor, intern, tenure
 
@@ -38,15 +38,15 @@ Set `data-theme="dark"` on `<html>` (or any ancestor). Variables under `[data-th
 ```ts
 // tailwind.config.ts
 import type { Config } from "tailwindcss";
-import canvasPreset from "@canvas/tokens/tailwind";
+import anansePreset from "@ananse/tokens/tailwind";
 
 export default {
-  presets: [canvasPreset],
+  presets: [anansePreset],
   content: ["./src/**/*.{ts,tsx}"],
 } satisfies Config;
 ```
 
-Utility colors map to the same CSS variables (e.g. `bg-canvas-node`, `text-canvas-node-text`, `border-canvas-node-border`).
+Utility colors map to the same CSS variables (e.g. `bg-ananse-node`, `text-ananse-node-text`, `border-ananse-node-border`).
 
 ## License
 

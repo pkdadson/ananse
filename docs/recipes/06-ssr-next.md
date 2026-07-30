@@ -1,6 +1,6 @@
 # Recipe: Next.js / SSR
 
-React Flow needs the browser DOM. Render Canvas charts **client-only**.
+React Flow needs the browser DOM. Render Ananse charts **client-only**.
 
 ## App Router
 
@@ -9,7 +9,7 @@ React Flow needs the browser DOM. Render Canvas charts **client-only**.
 import dynamic from "next/dynamic";
 
 const OrgChart = dynamic(
-  () => import("@canvas/react").then((m) => m.OrgChart),
+  () => import("@ananse/react").then((m) => m.OrgChart),
   { ssr: false, loading: () => <p>Loading org chart…</p> },
 );
 
@@ -28,12 +28,12 @@ export default function OrgPage() {
 ```tsx
 "use client";
 
-import { OrgChart } from "@canvas/react";
+import { OrgChart } from "@ananse/react";
 
 export function OrgClient({ people }: { people: /* Employee[] */ unknown[] }) {
   return (
     <OrgChart
-      data={people as import("@canvas/core").Employee[]}
+      data={people as import("@ananse/core").Employee[]}
       height="calc(100vh - 64px)"
       showSearch
     />
@@ -47,14 +47,14 @@ export function OrgClient({ people }: { people: /* Employee[] */ unknown[] }) {
 |-------|-----|
 | `window is not defined` | `dynamic(..., { ssr: false })` or `"use client"` |
 | Blank chart | Pass `height="100vh"` or a real parent height |
-| Missing styles | Tokens auto-inject; optional: `import "@canvas/tokens/variables.css"` in `layout.tsx` |
+| Missing styles | Tokens auto-inject; optional: `import "@ananse/tokens/variables.css"` in `layout.tsx` |
 | RSC props | Fetch people on the server, pass serializable JSON into the client chart |
 
 ## Remix
 
 ```tsx
 import { ClientOnly } from "remix-utils/client-only";
-import { OrgChart } from "@canvas/react";
+import { OrgChart } from "@ananse/react";
 
 export default function Org() {
   return (

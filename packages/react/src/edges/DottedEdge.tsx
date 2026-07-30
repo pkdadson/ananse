@@ -15,9 +15,11 @@ export function DottedEdge(props: EdgeProps): ReactElement {
     <BaseEdge
       id={props.id}
       path={path}
+      {...(props.markerEnd !== undefined ? { markerEnd: props.markerEnd } : {})}
+      {...(props.markerStart !== undefined ? { markerStart: props.markerStart } : {})}
       style={{
-        stroke: "var(--canvas-edge-color)",
-        strokeWidth: "var(--canvas-edge-width)",
+        stroke: "var(--ananse-edge-color)",
+        strokeWidth: "var(--ananse-edge-width)",
         strokeDasharray: "4 4",
         ...props.style,
       }}

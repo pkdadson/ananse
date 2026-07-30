@@ -1,4 +1,4 @@
-@import "@canvas/tokens/variables.css";
+@import "@ananse/tokens/variables.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -9,7 +9,7 @@ body,
   margin: 0;
   padding: 0;
   height: 100%;
-  background: var(--canvas-bg);
+  background: var(--ananse-bg);
 }
 
 /* Global focus-visible ring for keyboard users */
@@ -30,9 +30,9 @@ textarea:focus-visible {
   gap: 4px;
   padding: 4px;
   border-radius: 10px;
-  background: var(--canvas-node-bg);
-  border: 1px solid var(--canvas-node-border);
-  box-shadow: var(--canvas-node-shadow);
+  background: var(--ananse-node-bg);
+  border: 1px solid var(--ananse-node-border);
+  box-shadow: var(--ananse-node-shadow);
 }
 .react-flow__controls-button {
   width: 40px !important;
@@ -40,10 +40,10 @@ textarea:focus-visible {
   border-radius: 8px !important;
   border: none !important;
   background: transparent !important;
-  color: var(--canvas-node-text) !important;
+  color: var(--ananse-node-text) !important;
 }
 .react-flow__controls-button:hover {
-  background: var(--canvas-selection-bg) !important;
+  background: var(--ananse-selection-bg) !important;
 }
 .react-flow__controls-button svg {
   width: 18px;

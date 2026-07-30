@@ -1,8 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **Renamed:** `@canvas/{core,react,tokens}` → `@ananse/{core,react,tokens}`. CSS custom properties `--canvas-*` → `--ananse-*`, Tailwind tokens `bg-canvas-*` → `bg-ananse-*`, data attributes `data-canvas-*` → `data-ananse-*`, and TypeScript types `CanvasOrgLabels`/`CanvasChartLabels`/`CanvasHeight` → `AnanseOrgLabels`/`AnanseChartLabels`/`AnanseHeight`. Scripts `canvas-doctor` and `create-canvas-app` are now `ananse-doctor` and `create-ananse-app`.
+
 ## 0.1.0 — 2026-07-30
 
-First installable milestone of the Canvas org-chart kit — expanded into a multi-layout platform.
+First installable milestone of the Ananse org-chart kit — expanded into a multi-layout platform.
 
 ### DX 10/10 (Phases A–C)
 - **One-liner edit:** `mode="edit"` + `onChange` (no editor glue)
@@ -29,21 +33,21 @@ First installable milestone of the Canvas org-chart kit — expanded into a mult
 - Demo CSV import / sample CSV / reset
 - MIT `LICENSE`, package keywords, `prepublishOnly`, `pnpm publish:check`
 
-### `@canvas/core`
+### `@ananse/core`
 - Types: `Employee` with people fields (email, location, tenure, employment type, work mode)
 - Zod schemas with enum validation
 - Dagre org layout, tree traversal, search
 - Data adapters: `parseEmployeesCsv`, `fromHrisJson`, `fromNestedTree`
 - Edit mutations: `reparentEmployee`, `addVacantRole`, `removeEmployee`, `updateEmployee`
 
-### `@canvas/react`
+### `@ananse/react`
 - `<OrgChart mode="view" | "edit">` on React Flow
 - Viewer: pan/zoom, collapse, search, focus, keyboard, minimap
 - Density kit: default / detailed / compact / minimal cards + badges
 - Editor: drag reparent, vacant roles, undo/redo, delete, **inspector panel**
 - Hooks: `useOrgChartEditor`, `useOrgChartState`, `useSearch`, `useFocusMode`, `useKeyboardNav`
 
-### `@canvas/tokens`
+### `@ananse/tokens`
 - CSS variables + Tailwind preset (including badge colors)
 
 ### Docs

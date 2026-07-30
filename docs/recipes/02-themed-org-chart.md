@@ -1,16 +1,16 @@
 # Recipe: Themed org chart
 
-Style Canvas with design tokens and optional Tailwind.
+Style Ananse with design tokens and optional Tailwind.
 
 ## 1. CSS variables
 
 Import the token stylesheet once:
 
 ```ts
-import "@canvas/tokens/variables.css";
+import "@ananse/tokens/variables.css";
 ```
 
-All node surfaces, edges, focus rings, department accents, and badge colors read from CSS custom properties (see `@canvas/tokens`).
+All node surfaces, edges, focus rings, department accents, and badge colors read from CSS custom properties (see `@ananse/tokens`).
 
 ## 2. Dark theme
 
@@ -30,15 +30,15 @@ Dark overrides live under `[data-theme="dark"]` in `variables.css` (background, 
 
 ## 3. Tailwind preset (optional)
 
-If you use Tailwind, extend the Canvas palette:
+If you use Tailwind, extend the Ananse palette:
 
 ```ts
 // tailwind.config.ts
 import type { Config } from "tailwindcss";
-import canvasPreset from "@canvas/tokens/tailwind";
+import anansePreset from "@ananse/tokens/tailwind";
 
 export default {
-  presets: [canvasPreset],
+  presets: [anansePreset],
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
 } satisfies Config;
 ```
@@ -46,7 +46,7 @@ export default {
 Example utilities:
 
 ```tsx
-<div className="bg-canvas-bg text-canvas-node-text border border-canvas-node-border">
+<div className="bg-ananse-bg text-ananse-node-text border border-ananse-node-border">
   …
 </div>
 ```
@@ -57,8 +57,8 @@ Override any variable after the import:
 
 ```css
 :root {
-  --canvas-node-radius: 16px;
-  --canvas-dept-engineering: hsl(200 90% 45%);
+  --ananse-node-radius: 16px;
+  --ananse-dept-engineering: hsl(200 90% 45%);
 }
 ```
 

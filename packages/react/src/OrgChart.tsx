@@ -2,24 +2,28 @@ import type {
   AddVacantRoleInput,
   Employee,
   EmployeePatch,
+  HierarchyNodeInput,
   LayoutResult,
   OrgChartLayoutOptions,
   OrgMutationEvent,
-} from "@canvas/core";
+} from "@ananse/core";
 import {
   getDescendants,
   getDirectReports,
   layoutOrgChart,
   loadOrgFromStorage,
+  normalizeHierarchyNodes,
   saveOrgToStorage,
-} from "@canvas/core";
+} from "@ananse/core";
 import {
   Background,
   Controls,
   type Edge,
+  type EdgeTypes,
   MiniMap,
   type Node,
   type NodeProps,
+  type NodeTypes,
   type OnNodeDrag,
   Position,
   ReactFlow,
@@ -39,23 +43,41 @@ import {
   useState,
 } from "react";
 import "@xyflow/react/dist/style.css";
+import { AddVacantDialog } from "./controls/AddVacantDialog.js";
 import { EditorToolbar } from "./controls/EditorToolbar.js";
 import { InspectorPanel } from "./controls/InspectorPanel.js";
 import { SearchBar } from "./controls/SearchBar.js";
 import { DottedEdge } from "./edges/DottedEdge.js";
 import { SolidEdge } from "./edges/SolidEdge.js";
+import {
+  type ExtraOrgEdge,
+  type OrgChartPlugin,
+  type OrgLayoutFn,
+  type RenderAddVacantFn,
+  type RenderInspectorFn,
+  type ResolveOrgNodeTypeContext,
+  appendExtraEdges,
+  mergeTypeMaps,
+} from "./extensibility/types.js";
 import { useFocusMode } from "./hooks/useFocusMode.js";
 import { useKeyboardNav } from "./hooks/useKeyboardNav.js";
 import { useOrgChartEditor } from "./hooks/useOrgChartEditor.js";
 import { useOrgChartState } from "./hooks/useOrgChartState.js";
 import { useSearch } from "./hooks/useSearch.js";
+import type { AnanseOrgLabels } from "./i18n/labels.js";
+import { DEFAULT_HIERARCHY_LABELS, HIERARCHY_CARD_FIELDS, mergeOrgLabels } from "./i18n/labels.js";
 import { ExecutiveCard } from "./nodes/ExecutiveCard.js";
 import { ManagerCard } from "./nodes/ManagerCard.js";
 import { NodeShell } from "./nodes/NodeShell.js";
 import { VacantRoleCard } from "./nodes/VacantRoleCard.js";
 import { EmployeeFace, type NodeVariant } from "./nodes/employeeFace.js";
-import { injectCanvasTokens } from "./styles/injectTokens.js";
-import { type CanvasHeight, chartShellStyle, useZeroHeightWarning } from "./utils/mount.js";
+import { injectAnanseTokens } from "./styles/injectTokens.js";
+import {
+  type AnanseHeight,
+  chartShellStyle,
+  useContainerWidth,
+  useZeroHeightWarning,
+} from "./utils/mount.js";
 
 /** Toggle people-card fields without writing a custom renderer. */
 export type CardFieldsConfig = {
@@ -90,7 +112,14 @@ export type OrgChartNodeData = {
   renderCard?: ((employee: Employee, ctx: RenderCardContext) => ReactNode) | undefined;
   isExecutive?: boolean;
   isVacant?: boolean;
+  reportSingular?: string;
+  reportPlural?: string;
+  hideReports?: string;
+  showReports?: string;
 };
+
+/** UI domain: people org chart vs generic hierarchy (accounts, products, geo…). */
+export type OrgChartDomain = "people" | "hierarchy";
 
 function applyFields(employee: Employee, fields?: CardFieldsConfig): Employee {
   if (!fields) return employee;
@@ -148,6 +177,10 @@ function renderNodeFace(data: OrgChartNodeData): ReactNode {
         collapsed={data.collapsed}
         onToggleCollapse={data.onToggleCollapse}
         variant={data.nodeVariant}
+        {...(data.reportSingular ? { reportSingular: data.reportSingular } : {})}
+        {...(data.reportPlural ? { reportPlural: data.reportPlural } : {})}
+        {...(data.hideReports ? { hideLabel: data.hideReports } : {})}
+        {...(data.showReports ? { showLabel: data.showReports } : {})}
       />
     );
   }
@@ -209,6 +242,13 @@ function pickNodeType(e: Employee, isManager: boolean): NodeTypeName {
   return "employee";
 }
 
+/** Accessible name for a person / vacant node in the graph. */
+function orgNodeAriaLabel(employee: Employee, isVacant: boolean, vacantTitle: string): string {
+  if (isVacant) return `Open role: ${vacantTitle}`;
+  const title = employee.title?.trim();
+  return title ? `${employee.name}, ${title}` : employee.name;
+}
+
 /** Optional advanced editor integration (pair with `useOrgChartEditor`). */
 export type OrgChartEditorApi = {
   onReparent: (employeeId: string, newManagerId: string | null) => boolean | undefined;
@@ -224,15 +264,21 @@ export type OrgChartEditorApi = {
 
 export type OrgChartProps = {
   /**
-   * Controlled people data. When set, parent owns state —
-   * pair with `onChange` in edit mode.
+   * Controlled tree data. Accepts canonical nodes or loose input with `parentId`.
+   * Pair with `onChange` in edit mode.
    */
-  data?: Employee[];
+  data?: HierarchyNodeInput[];
   /**
    * Uncontrolled initial data (simple path).
-   * @example <OrgChart defaultData={employees} mode="edit" onChange={setEmployees} />
+   * @example <OrgChart defaultData={nodes} mode="edit" onChange={setNodes} />
    */
-  defaultData?: Employee[];
+  defaultData?: HierarchyNodeInput[];
+  /**
+   * UI preset: people (HR labels + full inspector) vs hierarchy (neutral labels,
+   * hide employment badges/email by default).
+   * @default "people"
+   */
+  domain?: OrgChartDomain;
   /** @default "view" */
   mode?: "view" | "edit";
   /** Fires after every successful edit (reparent, remove, undo, …). */
@@ -240,6 +286,16 @@ export type OrgChartProps = {
   /** Granular mutation stream for API sync. */
   onMutation?: (event: OrgMutationEvent) => void;
   layoutOptions?: OrgChartLayoutOptions;
+  /**
+   * Bring-your-own layout (free topology / custom positioning).
+   * Defaults to `layoutOrgChart` from `@ananse/core`.
+   */
+  layout?: OrgLayoutFn;
+  /**
+   * Free graph edges beyond `managerId` / `dottedLineManagerIds`
+   * (matrix reporting, project links, custom RF edge types).
+   */
+  extraEdges?: ExtraOrgEdge[];
   /** Override React Flow fitView options (padding / zoom bounds). */
   fitViewOptions?: { padding?: number; minZoom?: number; maxZoom?: number };
   /** Absolute min zoom. Large orgs default lower automatically. */
@@ -257,7 +313,7 @@ export type OrgChartProps = {
   /** Side panel to edit selected person fields (edit mode). Default true. */
   showInspector?: boolean;
   /** CSS height — number (px) or any CSS string. Default minHeight 480. */
-  height?: CanvasHeight;
+  height?: AnanseHeight;
   className?: string;
   style?: CSSProperties;
   /** Show/hide card fields without a custom renderer. */
@@ -269,6 +325,30 @@ export type OrgChartProps = {
    * Loads on mount when using defaultData.
    */
   persistKey?: string;
+  /** i18n: override chrome strings (search, toolbar, inspector, dialog). */
+  labels?: Partial<AnanseOrgLabels>;
+  /**
+   * Merge custom React Flow node types with built-ins
+   * (`employee`, `manager`, `executive`, `vacant`).
+   */
+  nodeTypes?: NodeTypes;
+  /**
+   * Merge custom React Flow edge types with built-ins (`solid`, `dotted`).
+   */
+  edgeTypes?: EdgeTypes;
+  /**
+   * Map an employee to an RF node type name. Use with `nodeTypes` for custom cards.
+   */
+  getNodeType?: (employee: Employee, ctx: ResolveOrgNodeTypeContext) => string;
+  /** Replace the default inspector (return null to hide). */
+  renderInspector?: RenderInspectorFn;
+  /** Replace the vacant-role dialog. */
+  renderAddVacant?: RenderAddVacantFn;
+  /**
+   * Light plugins: merge labels + nodeTypes + edgeTypes.
+   * Prop-level maps win over plugins.
+   */
+  plugins?: OrgChartPlugin[];
 };
 
 function nodeSize(n: Node): { w: number; h: number } {
@@ -349,6 +429,8 @@ type OrgChartInnerProps = {
   data: Employee[];
   mode: "view" | "edit";
   layoutOptions?: OrgChartLayoutOptions;
+  layoutFn?: OrgLayoutFn;
+  extraEdges?: ExtraOrgEdge[];
   fitViewOptions?: { padding?: number; minZoom?: number; maxZoom?: number };
   minZoom?: number;
   showSearch?: boolean;
@@ -360,12 +442,20 @@ type OrgChartInnerProps = {
   showInspector?: boolean;
   fields?: CardFieldsConfig;
   renderCard?: (employee: Employee, ctx: RenderCardContext) => ReactNode;
+  labels: AnanseOrgLabels;
+  nodeTypes?: NodeTypes;
+  edgeTypes?: EdgeTypes;
+  getNodeType?: (employee: Employee, ctx: ResolveOrgNodeTypeContext) => string;
+  renderInspector?: RenderInspectorFn;
+  renderAddVacant?: RenderAddVacantFn;
 };
 
 function OrgChartInner({
   data,
   mode,
   layoutOptions,
+  layoutFn,
+  extraEdges,
   fitViewOptions: fitViewOptionsProp,
   minZoom: minZoomProp,
   showSearch = false,
@@ -377,37 +467,88 @@ function OrgChartInner({
   showInspector = true,
   fields,
   renderCard,
+  labels,
+  nodeTypes: nodeTypesProp,
+  edgeTypes: edgeTypesProp,
+  getNodeType,
+  renderInspector,
+  renderAddVacant,
 }: OrgChartInnerProps): ReactElement {
   const isEdit = mode === "edit" && editor !== undefined;
   const largeOrg = data.length >= 100;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const containerWidth = useContainerWidth(containerRef);
+  // Narrow viewport → readable cards win over fitting the whole tree
+  const isNarrow = containerWidth !== null && containerWidth < 640;
+  // Keep built-in map identity when no custom types (avoids React Flow #002).
+  const resolvedNodeTypes = useMemo(
+    () => mergeTypeMaps(orgNodeTypes as NodeTypes, nodeTypesProp),
+    [nodeTypesProp],
+  );
+  const resolvedEdgeTypes = useMemo(
+    () => mergeTypeMaps(orgEdgeTypes as EdgeTypes, edgeTypesProp),
+    [edgeTypesProp],
+  );
+  // Primitive deps so parent inline `{ padding: … }` objects don't thrash fitView.
+  const fitPad = fitViewOptionsProp?.padding;
+  const fitMinZ = fitViewOptionsProp?.minZoom;
+  const fitMaxZ = fitViewOptionsProp?.maxZoom;
   const resolvedFitView = useMemo(
     () => ({
-      padding: largeOrg ? 0.08 : 0.15,
-      minZoom: largeOrg ? 0.05 : 0.1,
-      maxZoom: largeOrg ? 1.2 : 1.5,
-      ...fitViewOptionsProp,
+      // Narrow: prefer readable (~44px) cards over fitting the entire tree
+      padding: fitPad ?? (largeOrg ? 0.08 : isNarrow ? 0.08 : 0.15),
+      minZoom: fitMinZ ?? (isNarrow ? 0.95 : largeOrg ? 0.35 : 0.1),
+      maxZoom: fitMaxZ ?? (largeOrg ? 1.2 : 1.5),
     }),
-    [largeOrg, fitViewOptionsProp],
+    [largeOrg, isNarrow, fitPad, fitMinZ, fitMaxZ],
   );
-  const minZoom = minZoomProp ?? resolvedFitView.minZoom ?? 0.1;
+  const defaultEdgeOptions = useMemo(
+    () => ({
+      type: "solid" as const,
+      style: {
+        stroke: "var(--ananse-edge-color)",
+        strokeWidth: largeOrg ? 1.25 : 2,
+      },
+    }),
+    [largeOrg],
+  );
+  const rfProOptions = useMemo(() => ({ hideAttribution: true }), []);
+  // Absolute zoom-out ceiling still allows manual pinch-zoom past fit floor
+  const minZoom = minZoomProp ?? (largeOrg ? 0.05 : isNarrow ? 0.45 : 0.1);
   const { visibleIds, isCollapsed, toggleCollapse } = useOrgChartState(data);
   const { query, setQuery, matchIds } = useSearch(data);
   const { focusedIds, focusedId, setFocus, clearFocus } = useFocusMode(data);
-  const containerRef = useRef<HTMLDivElement>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [vacantDialogOpen, setVacantDialogOpen] = useState(false);
   const selectedId = selectedIds[selectedIds.length - 1] ?? null;
   /** Free-drag positions that override dagre until reparent or explicit reset. */
   const [pinnedPositions, setPinnedPositions] = useState<Record<string, { x: number; y: number }>>(
     {},
   );
-  const { screenToFlowPosition, getNodes } = useReactFlow();
+  const { screenToFlowPosition, getNodes, fitView } = useReactFlow();
   const selectedEmployee = useMemo(
     () => (selectedId ? (data.find((e) => e.id === selectedId) ?? null) : null),
     [data, selectedId],
   );
 
-  const onFocus = useCallback((id: string) => setFocus(id), [setFocus]);
+  // Keep keyboard focus path and RF selection in sync for clear feedback.
+  const onFocus = useCallback(
+    (id: string) => {
+      setFocus(id);
+      setSelectedIds([id]);
+    },
+    [setFocus],
+  );
   useKeyboardNav({ employees: data, focusedId, onFocus });
+
+  // Leaving edit clears multi-select / inspector so View mode and mobile
+  // chrome don't keep a stale "Remove (N)" selection.
+  useEffect(() => {
+    if (!isEdit) {
+      setSelectedIds([]);
+      setVacantDialogOpen(false);
+    }
+  }, [isEdit]);
 
   useEffect(() => {
     function isEditableTarget(el: EventTarget | null): boolean {
@@ -423,9 +564,17 @@ function OrgChartInner({
         else editor?.onUndo?.();
         return;
       }
-      if (event.key === "Escape" && focusedId) {
-        event.preventDefault();
-        clearFocus();
+      if (event.key === "Escape") {
+        if (vacantDialogOpen) {
+          event.preventDefault();
+          setVacantDialogOpen(false);
+          return;
+        }
+        if (focusedId || selectedIds.length > 0) {
+          event.preventDefault();
+          clearFocus();
+          setSelectedIds([]);
+        }
         return;
       }
       if (event.key === "/" && showSearch && !isEditableTarget(event.target)) {
@@ -455,7 +604,7 @@ function OrgChartInner({
     }
     window.addEventListener("keydown", handle);
     return () => window.removeEventListener("keydown", handle);
-  }, [focusedId, clearFocus, showSearch, isEdit, editor, selectedIds]);
+  }, [focusedId, clearFocus, showSearch, isEdit, editor, selectedIds, vacantDialogOpen]);
 
   const visibleData = useMemo(() => data.filter((e) => visibleIds.has(e.id)), [data, visibleIds]);
 
@@ -464,16 +613,22 @@ function OrgChartInner({
     const byVariant: Record<NodeVariant, OrgChartLayoutOptions> = {
       default: { nodeWidth: 240, nodeHeight: 100, nodeSep: 40, rankSep: 72 },
       detailed: { nodeWidth: 260, nodeHeight: 148, nodeSep: 36, rankSep: 80 },
-      compact: { nodeWidth: 188, nodeHeight: 56, nodeSep: 28, rankSep: 56 },
-      minimal: { nodeWidth: 148, nodeHeight: 40, nodeSep: 24, rankSep: 48 },
+      // Compact is taller than minimal so density switch is obvious after fit-view
+      compact: { nodeWidth: 196, nodeHeight: 64, nodeSep: 28, rankSep: 56 },
+      // 44px min matches touch-target guidance for minimal pills
+      minimal: { nodeWidth: 152, nodeHeight: 46, nodeSep: 22, rankSep: 44 },
     };
-    return { ...byVariant[nodeVariant], ...layoutOptions };
+    const base = byVariant[nodeVariant];
+    if (!layoutOptions) return base;
+    return { ...base, ...layoutOptions };
   }, [nodeVariant, layoutOptions]);
 
-  const layout: LayoutResult<Employee> = useMemo(
-    () => layoutOrgChart(visibleData, densityLayout),
-    [visibleData, densityLayout],
-  );
+  const layout: LayoutResult<Employee> = useMemo(() => {
+    const run = layoutFn ?? layoutOrgChart;
+    const base = run(visibleData, densityLayout);
+    const ids = new Set(visibleData.map((e) => e.id));
+    return appendExtraEdges(base, extraEdges, ids);
+  }, [visibleData, densityLayout, layoutFn, extraEdges]);
 
   // Structural nodes only (no selection/search/focus) — safe to rebuild without killing drag.
   // pinnedPositions keep free-drag placements across rebuilds.
@@ -481,9 +636,15 @@ function OrgChartInner({
     return layout.nodes.map((n) => {
       const reportCount = getDirectReports(data, n.id).length;
       const isManager = reportCount > 0;
-      const type = pickNodeType(n.data, isManager);
+      const defaultType = pickNodeType(n.data, isManager);
+      const type = getNodeType ? getNodeType(n.data, { isManager, defaultType }) : defaultType;
       const collapsed = isCollapsed(n.id);
       const pinned = pinnedPositions[n.id];
+      const vacantTitle =
+        typeof n.data.meta?.title === "string"
+          ? (n.data.meta.title as string)
+          : (n.data.title ?? "Open Role");
+      const isVacant = type === "vacant" || n.data.meta?.role === "vacant";
       return {
         id: n.id,
         type,
@@ -495,6 +656,7 @@ function OrgChartInner({
         draggable: isEdit,
         selectable: true,
         selected: false,
+        ariaLabel: orgNodeAriaLabel(n.data, Boolean(isVacant), vacantTitle),
         style: {
           pointerEvents: "all" as const,
           zIndex: 1,
@@ -502,10 +664,7 @@ function OrgChartInner({
         },
         data: {
           employee: n.data,
-          title:
-            typeof n.data.meta?.title === "string"
-              ? (n.data.meta.title as string)
-              : (n.data.title ?? "Open Role"),
+          title: vacantTitle,
           department: n.data.department,
           directReportCount: reportCount,
           collapsed,
@@ -515,8 +674,12 @@ function OrgChartInner({
           nodeVariant,
           fields,
           renderCard,
-          isExecutive: type === "executive",
-          isVacant: type === "vacant",
+          isExecutive: type === "executive" || n.data.meta?.role === "executive",
+          isVacant: Boolean(isVacant),
+          reportSingular: labels.reportSingular,
+          reportPlural: labels.reportPlural,
+          hideReports: labels.hideReports,
+          showReports: labels.showReports,
         } satisfies OrgChartNodeData,
       };
     });
@@ -530,6 +693,11 @@ function OrgChartInner({
     pinnedPositions,
     fields,
     renderCard,
+    getNodeType,
+    labels.reportSingular,
+    labels.reportPlural,
+    labels.hideReports,
+    labels.showReports,
   ]);
 
   const layoutEdges = useMemo((): Edge[] => {
@@ -556,6 +724,9 @@ function OrgChartInner({
   // Soft patch: multi-select + dim without resetting drag positions.
   // Must return the same `prev` array when nothing changed — a new array from
   // .map() retriggers RF selection → onSelectionChange → infinite update loop.
+  // `layoutNodes` is included so re-application runs after a full-replace
+  // (e.g. collapse) wipes dim flags on the fresh nodes.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: layoutNodes is an intentional trigger, not a body reference
   useEffect(() => {
     const isSearchActive = query.trim().length > 0;
     const isFocusActive = focusedIds.size > 0;
@@ -584,7 +755,7 @@ function OrgChartInner({
       });
       return changed ? next : prev;
     });
-  }, [selectedIds, query, matchIds, focusedIds, setNodes]);
+  }, [selectedIds, query, matchIds, focusedIds, setNodes, layoutNodes]);
 
   const onNodeDragStop: OnNodeDrag = useCallback(
     (event, node) => {
@@ -632,17 +803,21 @@ function OrgChartInner({
 
   const handleAddVacant = useCallback(() => {
     if (!editor?.onAddVacant) return;
-    const parentId = selectedId ?? data.find((e) => e.managerId === null)?.id ?? null;
-    const title =
-      typeof window !== "undefined"
-        ? window.prompt("Title for vacant role", "Open Role")
-        : "Open Role";
-    if (!title) return;
-    editor.onAddVacant({
-      title,
-      managerId: parentId,
-    });
-  }, [editor, selectedId, data]);
+    setVacantDialogOpen(true);
+  }, [editor]);
+
+  const confirmAddVacant = useCallback(
+    (title: string) => {
+      if (!editor?.onAddVacant) return;
+      const parentId = selectedId ?? data.find((e) => e.managerId === null)?.id ?? null;
+      editor.onAddVacant({
+        title,
+        managerId: parentId,
+      });
+      setVacantDialogOpen(false);
+    },
+    [editor, selectedId, data],
+  );
 
   const showChrome = showSearch || (isEdit && showEditorToolbar && editor);
   const showInspectorPanel =
@@ -652,10 +827,20 @@ function OrgChartInner({
     selectedEmployee !== null &&
     selectedIds.length === 1;
 
+  // Re-fit when chrome/layout constraints change: inspector, density, or
+  // narrow breakpoint (mobile fit prefers larger cards / higher minZoom).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: showInspectorPanel/nodeVariant/isNarrow are intentional triggers, not body references
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      fitView(resolvedFitView);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [showInspectorPanel, nodeVariant, isNarrow, fitView, resolvedFitView]);
+
   return (
     <div
       ref={containerRef}
-      data-canvas-orgchart
+      data-ananse-orgchart
       style={{
         display: "flex",
         flexDirection: "column",
@@ -667,25 +852,44 @@ function OrgChartInner({
       {/* Chrome strip reserves layout space — never overlays cards */}
       {showChrome ? (
         <div
-          data-canvas-org-chrome
+          data-ananse-org-chrome
           style={{
             flexShrink: 0,
             display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: 8,
-            padding: "8px 12px",
-            borderBottom: "1px solid var(--canvas-node-border)",
-            background: "var(--canvas-node-bg)",
+            flexDirection: isNarrow ? "column" : "row",
+            flexWrap: isNarrow ? "nowrap" : "wrap",
+            alignItems: isNarrow ? "stretch" : "center",
+            gap: isNarrow ? 6 : 8,
+            padding: isNarrow ? "6px 10px" : "8px 12px",
+            borderBottom: "1px solid var(--ananse-node-border)",
+            background: "var(--ananse-node-bg)",
             zIndex: 10,
           }}
         >
           {showSearch ? (
-            <SearchBar value={query} onChange={setQuery} matchCount={matchIds.size} />
+            <SearchBar
+              value={query}
+              onChange={setQuery}
+              matchCount={matchIds.size}
+              aria-label={labels.searchAriaLabel}
+              placeholder={labels.searchPlaceholder}
+              clearLabel={labels.clearSearch}
+              matchSingular={labels.matchSingular}
+              matchPlural={labels.matchPlural}
+              fullWidth={isNarrow}
+            />
           ) : null}
           {isEdit && showEditorToolbar && editor ? (
-            <div style={{ marginLeft: "auto", maxWidth: "100%", overflowX: "auto" }}>
+            <div
+              style={{
+                marginLeft: isNarrow ? 0 : "auto",
+                maxWidth: "100%",
+                minWidth: 0,
+                overflowX: "auto",
+              }}
+            >
               <EditorToolbar
+                compact={isNarrow}
                 canUndo={Boolean(editor.canUndo)}
                 canRedo={Boolean(editor.canRedo)}
                 onUndo={() => {
@@ -709,111 +913,136 @@ function OrgChartInner({
                 hasSelection={selectedIds.length > 0}
                 selectionCount={selectedIds.length}
                 onExportJson={() => {
-                  void import("@canvas/core").then(({ downloadJson }) => {
+                  void import("@ananse/core").then(({ downloadJson }) => {
                     downloadJson("org-chart.json", data);
                   });
                 }}
                 error={editor.lastError ?? null}
+                labels={{
+                  undo: labels.undo,
+                  redo: labels.redo,
+                  addVacant: labels.addVacant,
+                  remove: labels.remove,
+                  exportJson: labels.exportJson,
+                }}
               />
             </div>
           ) : null}
         </div>
       ) : null}
 
-      <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
+      <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
+        <div style={{ position: "relative", flex: 1, minWidth: 0, minHeight: 0 }}>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            nodeTypes={resolvedNodeTypes}
+            edgeTypes={resolvedEdgeTypes}
+            nodesDraggable={isEdit}
+            nodesConnectable={false}
+            elementsSelectable
+            nodesFocusable
+            multiSelectionKeyCode={["Meta", "Control", "Shift"]}
+            selectionOnDrag={isEdit}
+            selectNodesOnDrag={false}
+            onNodeClick={(event, node) => {
+              setFocus(node.id);
+              const multi = event.shiftKey || event.metaKey || event.ctrlKey;
+              if (multi) {
+                setSelectedIds((prev) =>
+                  prev.includes(node.id) ? prev.filter((id) => id !== node.id) : [...prev, node.id],
+                );
+              } else {
+                setSelectedIds([node.id]);
+              }
+            }}
+            onSelectionChange={({ nodes: sel }) => {
+              if (!isEdit) return;
+              // Marquee multi-select → sync. Skip no-ops to avoid setState loops.
+              if (sel.length <= 1) return;
+              const ids = sel.map((n) => n.id);
+              setSelectedIds((prev) => {
+                if (prev.length === ids.length && prev.every((id, i) => id === ids[i])) return prev;
+                const prevSet = new Set(prev);
+                if (ids.length === prevSet.size && ids.every((id) => prevSet.has(id))) return prev;
+                return ids;
+              });
+            }}
+            onPaneClick={() => {
+              clearFocus();
+              setSelectedIds([]);
+            }}
+            {...(isEdit ? { onNodeDragStop } : {})}
+            fitView
+            fitViewOptions={resolvedFitView}
+            minZoom={minZoom}
+            maxZoom={2}
+            onlyRenderVisibleElements
+            proOptions={rfProOptions}
+            defaultEdgeOptions={defaultEdgeOptions}
+          >
+            <Background gap={20} size={1} color="var(--ananse-node-border)" />
+            {showControls ? (
+              <Controls showInteractive={false} fitViewOptions={resolvedFitView} />
+            ) : null}
+            {showMinimap ? (
+              <MiniMap
+                pannable
+                zoomable
+                nodeStrokeWidth={3}
+                nodeColor={(node) => {
+                  const role = (node.data as OrgChartNodeData | undefined)?.employee?.meta?.role;
+                  if (role === "vacant") return "#a1a1aa";
+                  if (role === "executive" || node.type === "executive") return "#f59e0b";
+                  if (node.type === "manager") return "#3b82f6";
+                  return "#94a3b8";
+                }}
+                nodeStrokeColor="#64748b"
+                maskColor="rgb(15, 23, 42, 0.08)"
+                style={{ background: "var(--ananse-node-bg)" }}
+              />
+            ) : null}
+          </ReactFlow>
+        </div>
         {showInspectorPanel && selectedEmployee && editor ? (
-          <div style={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}>
-            <InspectorPanel
-              employee={selectedEmployee}
-              onChange={(patch) => {
-                editor.onUpdate?.(selectedEmployee.id, patch);
-              }}
-              onClose={() => setSelectedIds([])}
-            />
+          <div
+            style={{
+              flexShrink: 0,
+              padding: 12,
+              overflow: "auto",
+              borderLeft: "1px solid var(--ananse-node-border)",
+              background: "var(--ananse-node-bg)",
+            }}
+          >
+            {(() => {
+              const inspectorProps = {
+                employee: selectedEmployee,
+                onChange: (patch: EmployeePatch) => {
+                  editor.onUpdate?.(selectedEmployee.id, patch);
+                },
+                onClose: () => setSelectedIds([]),
+                labels,
+                fields,
+              };
+              if (renderInspector) return renderInspector(inspectorProps);
+              return <InspectorPanel {...inspectorProps} />;
+            })()}
           </div>
         ) : null}
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          nodeTypes={orgNodeTypes}
-          edgeTypes={orgEdgeTypes}
-          nodesDraggable={isEdit}
-          nodesConnectable={false}
-          elementsSelectable
-          nodesFocusable
-          multiSelectionKeyCode="Shift"
-          selectionOnDrag={isEdit}
-          selectNodesOnDrag={false}
-          onNodeClick={(event, node) => {
-            setFocus(node.id);
-            if (event.shiftKey) {
-              setSelectedIds((prev) =>
-                prev.includes(node.id) ? prev.filter((id) => id !== node.id) : [...prev, node.id],
-              );
-            } else {
-              setSelectedIds([node.id]);
-            }
-          }}
-          onSelectionChange={({ nodes: sel }) => {
-            if (!isEdit) return;
-            // Marquee multi-select → sync. Skip no-ops to avoid setState loops.
-            if (sel.length <= 1) return;
-            const ids = sel.map((n) => n.id);
-            setSelectedIds((prev) => {
-              if (prev.length === ids.length && prev.every((id, i) => id === ids[i])) return prev;
-              const prevSet = new Set(prev);
-              if (ids.length === prevSet.size && ids.every((id) => prevSet.has(id))) return prev;
-              return ids;
-            });
-          }}
-          onPaneClick={() => {
-            clearFocus();
-            setSelectedIds([]);
-          }}
-          {...(isEdit ? { onNodeDragStop } : {})}
-          fitView
-          fitViewOptions={resolvedFitView}
-          minZoom={minZoom}
-          maxZoom={2}
-          onlyRenderVisibleElements
-          proOptions={{ hideAttribution: true }}
-          defaultEdgeOptions={{
-            type: "solid",
-            style: {
-              stroke: "var(--canvas-edge-color)",
-              // Thinner edges on large orgs reduce visual noise
-              strokeWidth: largeOrg ? 1.25 : 2,
-            },
-          }}
-        >
-          <Background gap={20} size={1} color="var(--canvas-node-border)" />
-          {showControls ? (
-            <Controls showInteractive={false} fitViewOptions={resolvedFitView} />
-          ) : null}
-          {showMinimap ? (
-            <MiniMap
-              pannable
-              zoomable
-              nodeStrokeWidth={3}
-              nodeColor={(node) => {
-                const role = (node.data as OrgChartNodeData | undefined)?.employee?.meta?.role;
-                if (role === "vacant") return "#a1a1aa";
-                if (role === "executive" || node.type === "executive") return "#f59e0b";
-                if (node.type === "manager") return "#3b82f6";
-                return "#94a3b8";
-              }}
-              nodeStrokeColor="#64748b"
-              maskColor="rgb(15, 23, 42, 0.08)"
-              style={{
-                background: "var(--canvas-node-bg)",
-                right: showInspectorPanel ? 288 : undefined,
-              }}
-            />
-          ) : null}
-        </ReactFlow>
       </div>
+      {(() => {
+        const vacantProps = {
+          open: vacantDialogOpen,
+          defaultTitle: "Open Role",
+          onConfirm: confirmAddVacant,
+          onCancel: () => setVacantDialogOpen(false),
+          labels,
+        };
+        if (renderAddVacant) return renderAddVacant(vacantProps);
+        return <AddVacantDialog {...vacantProps} />;
+      })()}
     </div>
   );
 }
@@ -839,12 +1068,36 @@ function resolveSeed(props: OrgChartProps): Employee[] {
  * <OrgChart defaultData={employees} mode="edit" onChange={setEmployees} height="100vh" />
  * ```
  */
+function resolveDomainFields(
+  domain: OrgChartDomain,
+  fields?: CardFieldsConfig,
+): CardFieldsConfig | undefined {
+  if (domain === "hierarchy") {
+    return { ...HIERARCHY_CARD_FIELDS, ...fields };
+  }
+  return fields;
+}
+
+function resolveDomainLabels(
+  domain: OrgChartDomain,
+  pluginLabels: Partial<AnanseOrgLabels>,
+  labelsProp?: Partial<AnanseOrgLabels>,
+): AnanseOrgLabels {
+  const base = domain === "hierarchy" ? DEFAULT_HIERARCHY_LABELS : undefined;
+  return mergeOrgLabels({
+    ...(base ?? {}),
+    ...pluginLabels,
+    ...labelsProp,
+  });
+}
+
 export function OrgChart(props: OrgChartProps): ReactElement {
-  injectCanvasTokens();
+  injectAnanseTokens();
 
   const {
     data: dataProp,
     defaultData,
+    domain = "people",
     mode = "view",
     onChange,
     onMutation,
@@ -853,7 +1106,7 @@ export function OrgChart(props: OrgChartProps): ReactElement {
     className,
     style,
     persistKey,
-    fields,
+    fields: fieldsProp,
     renderCard,
     showSearch = false,
     showMinimap = true,
@@ -862,20 +1115,100 @@ export function OrgChart(props: OrgChartProps): ReactElement {
     showInspector = true,
     nodeVariant = "default",
     layoutOptions,
+    layout: layoutFn,
+    extraEdges,
     fitViewOptions,
     minZoom,
+    labels: labelsProp,
+    nodeTypes,
+    edgeTypes,
+    getNodeType,
+    renderInspector,
+    renderAddVacant,
+    plugins,
   } = props;
 
+  const fields = useMemo(() => resolveDomainFields(domain, fieldsProp), [domain, fieldsProp]);
+
+  const pluginLabels = useMemo(() => {
+    const merged: Partial<AnanseOrgLabels> = {};
+    for (const p of plugins ?? []) {
+      if (p.labels) Object.assign(merged, p.labels);
+    }
+    return merged;
+  }, [plugins]);
+
+  const labels = useMemo(
+    () => resolveDomainLabels(domain, pluginLabels, labelsProp),
+    [domain, pluginLabels, labelsProp],
+  );
+
+  // Accept parentId or managerId — always canonicalize for layout / editor.
+  const normalizedDataProp = useMemo(
+    () => (dataProp !== undefined ? normalizeHierarchyNodes(dataProp) : undefined),
+    [dataProp],
+  );
+  const normalizedDefault = useMemo(
+    () => (defaultData !== undefined ? normalizeHierarchyNodes(defaultData) : undefined),
+    [defaultData],
+  );
+
+  const pluginNodeTypes = useMemo(() => {
+    let map: NodeTypes | undefined;
+    for (const p of plugins ?? []) {
+      if (p.nodeTypes && Object.keys(p.nodeTypes).length > 0) {
+        map = { ...(map ?? {}), ...p.nodeTypes };
+      }
+    }
+    return map;
+  }, [plugins]);
+
+  const pluginEdgeTypes = useMemo(() => {
+    let map: EdgeTypes | undefined;
+    for (const p of plugins ?? []) {
+      if (p.edgeTypes && Object.keys(p.edgeTypes).length > 0) {
+        map = { ...(map ?? {}), ...p.edgeTypes };
+      }
+    }
+    return map;
+  }, [plugins]);
+
+  // Only pass custom maps when non-empty so Inner keeps module-level built-ins.
+  const customNodeTypes = useMemo(() => {
+    if (!pluginNodeTypes && !nodeTypes) return undefined;
+    if (!pluginNodeTypes) return nodeTypes;
+    if (!nodeTypes) return pluginNodeTypes;
+    return { ...pluginNodeTypes, ...nodeTypes };
+  }, [pluginNodeTypes, nodeTypes]);
+
+  const customEdgeTypes = useMemo(() => {
+    if (!pluginEdgeTypes && !edgeTypes) return undefined;
+    if (!pluginEdgeTypes) return edgeTypes;
+    if (!edgeTypes) return pluginEdgeTypes;
+    return { ...pluginEdgeTypes, ...edgeTypes };
+  }, [pluginEdgeTypes, edgeTypes]);
+
   // Hooks must run unconditionally (no early throw before hooks).
-  const missingData = dataProp === undefined && defaultData === undefined && !editorProp;
+  const missingData =
+    normalizedDataProp === undefined && normalizedDefault === undefined && !editorProp;
 
   const seedRef = useRef<Employee[] | null>(null);
-  if (seedRef.current === null) seedRef.current = resolveSeed(props);
+  if (seedRef.current === null) {
+    if (persistKey) {
+      const stored = loadOrgFromStorage(persistKey);
+      if (stored && stored.length > 0) seedRef.current = stored;
+    }
+    if (seedRef.current === null) {
+      seedRef.current = normalizedDefault ?? normalizedDataProp ?? [];
+    }
+  }
 
   const autoEditor = useOrgChartEditor({
     initialData: seedRef.current,
     // Controlled when parent passes `data` and no external editor API
-    ...(editorProp === undefined && dataProp !== undefined ? { data: dataProp } : {}),
+    ...(editorProp === undefined && normalizedDataProp !== undefined
+      ? { data: normalizedDataProp }
+      : {}),
     onChange: (next) => {
       onChange?.(next);
       if (persistKey) saveOrgToStorage(persistKey, next);
@@ -885,25 +1218,38 @@ export function OrgChart(props: OrgChartProps): ReactElement {
 
   const resolvedData =
     editorProp !== undefined
-      ? (dataProp ?? autoEditor.data)
-      : dataProp !== undefined
+      ? (normalizedDataProp ?? autoEditor.data)
+      : normalizedDataProp !== undefined
         ? autoEditor.data
         : autoEditor.data;
 
-  const resolvedEditor: OrgChartEditorApi | undefined =
-    mode === "edit"
-      ? (editorProp ?? {
-          onReparent: autoEditor.reparent,
-          onAddVacant: autoEditor.addVacant,
-          onRemove: autoEditor.remove,
-          onUpdate: autoEditor.update,
-          onUndo: autoEditor.undo,
-          onRedo: autoEditor.redo,
-          canUndo: autoEditor.canUndo,
-          canRedo: autoEditor.canRedo,
-          lastError: autoEditor.lastError,
-        })
-      : undefined;
+  const resolvedEditor: OrgChartEditorApi | undefined = useMemo(() => {
+    if (mode !== "edit") return undefined;
+    if (editorProp) return editorProp;
+    return {
+      onReparent: autoEditor.reparent,
+      onAddVacant: autoEditor.addVacant,
+      onRemove: autoEditor.remove,
+      onUpdate: autoEditor.update,
+      onUndo: autoEditor.undo,
+      onRedo: autoEditor.redo,
+      canUndo: autoEditor.canUndo,
+      canRedo: autoEditor.canRedo,
+      lastError: autoEditor.lastError,
+    };
+  }, [
+    mode,
+    editorProp,
+    autoEditor.reparent,
+    autoEditor.addVacant,
+    autoEditor.remove,
+    autoEditor.update,
+    autoEditor.undo,
+    autoEditor.redo,
+    autoEditor.canUndo,
+    autoEditor.canRedo,
+    autoEditor.lastError,
+  ]);
 
   const shellRef = useRef<HTMLDivElement>(null);
   useZeroHeightWarning(shellRef, "OrgChart", height !== undefined);
@@ -917,11 +1263,11 @@ export function OrgChart(props: OrgChartProps): ReactElement {
           display: "grid",
           placeItems: "center",
           padding: 24,
-          color: "var(--canvas-node-text)",
+          color: "var(--ananse-node-text)",
           fontFamily: "system-ui, sans-serif",
         }}
       >
-        {"[OrgChart] Pass data={employees} or defaultData={employees}."}
+        {labels.missingData}
       </div>
     );
   }
@@ -931,13 +1277,16 @@ export function OrgChart(props: OrgChartProps): ReactElement {
       ref={shellRef}
       className={className}
       style={chartShellStyle(height, style)}
-      data-canvas-root="org"
+      data-ananse-root="org"
     >
       <ReactFlowProvider>
         <OrgChartInner
           data={resolvedData}
           mode={mode}
+          labels={labels}
           {...(layoutOptions ? { layoutOptions } : {})}
+          {...(layoutFn ? { layoutFn } : {})}
+          {...(extraEdges ? { extraEdges } : {})}
           {...(fitViewOptions ? { fitViewOptions } : {})}
           {...(minZoom !== undefined ? { minZoom } : {})}
           showSearch={showSearch}
@@ -949,6 +1298,11 @@ export function OrgChart(props: OrgChartProps): ReactElement {
           showInspector={showInspector}
           {...(fields ? { fields } : {})}
           {...(renderCard ? { renderCard } : {})}
+          {...(customNodeTypes ? { nodeTypes: customNodeTypes } : {})}
+          {...(customEdgeTypes ? { edgeTypes: customEdgeTypes } : {})}
+          {...(getNodeType ? { getNodeType } : {})}
+          {...(renderInspector ? { renderInspector } : {})}
+          {...(renderAddVacant ? { renderAddVacant } : {})}
         />
       </ReactFlowProvider>
     </div>

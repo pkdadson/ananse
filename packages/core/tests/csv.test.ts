@@ -18,6 +18,18 @@ describe("parseCsvRows", () => {
 });
 
 describe("parseEmployeesCsv", () => {
+  it("accepts parentId as manager alias for generic hierarchies", () => {
+    const csv = ["id,name,title,parentId", "corp,Acme,Holding,", "eu,Europe,Region,corp"].join(
+      "\n",
+    );
+    const { employees, warnings } = parseEmployeesCsv(csv);
+    expect(warnings).toEqual([]);
+    expect(employees).toEqual([
+      { id: "corp", name: "Acme", title: "Holding", managerId: null },
+      { id: "eu", name: "Europe", title: "Region", managerId: "corp" },
+    ]);
+  });
+
   it("parses header aliases into employees", () => {
     const csv = [
       "employeeId,fullName,jobTitle,managerId,department,email,workMode,employmentType,tenureYears",

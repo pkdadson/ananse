@@ -1,4 +1,4 @@
-import type { Employee } from "@canvas/core";
+import type { Employee } from "@ananse/core";
 import type { ReactElement } from "react";
 import { EmployeeCard } from "./EmployeeCard.js";
 import { EmployeeCardCompact } from "./EmployeeCardCompact.js";

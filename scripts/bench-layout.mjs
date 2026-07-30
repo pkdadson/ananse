@@ -26,7 +26,7 @@ function bench(label, fn, runs = 5) {
 }
 
 const sizes = [100, 500, 1000, 2000];
-console.log("Canvas layout benchmarks\n");
+console.log("Ananse layout benchmarks\n");
 
 for (const size of sizes) {
   const people = core.generateOrgChart({ size, branching: 3 });

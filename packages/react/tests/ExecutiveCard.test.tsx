@@ -11,6 +11,6 @@ describe("ExecutiveCard", () => {
 
   it("applies executive visual role attribute", () => {
     const { container } = render(<ExecutiveCard data={{ id: "1", name: "Tim" }} />);
-    expect(container.querySelector('[data-canvas-role="executive"]')).not.toBeNull();
+    expect(container.querySelector('[data-ananse-role="executive"]')).not.toBeNull();
   });
 });

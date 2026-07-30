@@ -4,7 +4,7 @@
 
 ```tsx
 import { useState } from "react";
-import { OrgChart } from "@canvas/react";
+import { OrgChart } from "@ananse/react";
 
 export function App({ initial }) {
   const [people, setPeople] = useState(initial);
@@ -32,7 +32,7 @@ Built-in: free drag, reparent on drop, Shift/marquee multi-select, bulk remove, 
 ## Advanced: own the editor hook
 
 ```tsx
-import { OrgChart, useOrgChartEditor } from "@canvas/react";
+import { OrgChart, useOrgChartEditor } from "@ananse/react";
 
 const editor = useOrgChartEditor({
   initialData: people,

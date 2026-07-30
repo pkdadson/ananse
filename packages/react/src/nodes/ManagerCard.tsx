@@ -1,4 +1,4 @@
-import type { Employee } from "@canvas/core";
+import type { Employee } from "@ananse/core";
 import type { ReactElement } from "react";
 import { EmployeeFace, type NodeVariant } from "./employeeFace.js";
 
@@ -8,10 +8,15 @@ export type ManagerCardProps = {
   collapsed: boolean;
   onToggleCollapse: () => void;
   variant?: NodeVariant;
+  /** Override collapse copy (people: report/reports, hierarchy: child/children). */
+  reportSingular?: string;
+  reportPlural?: string;
+  hideLabel?: string;
+  showLabel?: string;
 };
 
-function reportsLabel(count: number): string {
-  return count === 1 ? "1 report" : `${count} reports`;
+function countLabel(count: number, singular: string, plural: string): string {
+  return count === 1 ? `1 ${singular}` : `${count} ${plural}`;
 }
 
 function Chevron({ collapsed }: { collapsed: boolean }): ReactElement {
@@ -44,10 +49,13 @@ export function ManagerCard({
   collapsed,
   onToggleCollapse,
   variant = "default",
+  reportSingular = "report",
+  reportPlural = "reports",
+  hideLabel = "Hide",
+  showLabel = "Show",
 }: ManagerCardProps): ReactElement {
-  const label = collapsed
-    ? `Show ${reportsLabel(directReportCount)}`
-    : `Hide ${reportsLabel(directReportCount)}`;
+  const countText = countLabel(directReportCount, reportSingular, reportPlural);
+  const label = collapsed ? `${showLabel} ${countText}` : `${hideLabel} ${countText}`;
   return (
     <div className="flex flex-col gap-2" style={{ pointerEvents: "all" }}>
       <EmployeeFace data={data} variant={variant} />
@@ -62,12 +70,12 @@ export function ManagerCard({
           // Keep RF pan/drag from swallowing the control.
           event.stopPropagation();
         }}
-        className="nodrag nopan canvas-focus-ring flex min-h-8 w-full items-center justify-between gap-2 rounded-md border border-canvas-node-border bg-canvas-selection px-3 py-1.5 text-xs font-semibold text-canvas-node-text transition hover:bg-canvas-selection/80"
+        className="nodrag nopan ananse-focus-ring flex min-h-11 w-full items-center justify-between gap-2 rounded-md border border-ananse-node-border bg-ananse-selection px-3 py-2 text-xs font-semibold text-ananse-node-text transition hover:bg-ananse-selection/80"
         aria-label={label}
         aria-expanded={!collapsed}
       >
         <span>
-          {collapsed ? "Show" : "Hide"} {reportsLabel(directReportCount)}
+          {collapsed ? showLabel : hideLabel} {countText}
         </span>
         <Chevron collapsed={collapsed} />
       </button>

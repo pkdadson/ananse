@@ -1,5 +1,5 @@
-import type { Employee } from "@canvas/core";
-import { getAncestors, getSubtreeIds } from "@canvas/core";
+import type { Employee } from "@ananse/core";
+import { getAncestors, getSubtreeIds } from "@ananse/core";
 import { useCallback, useMemo, useState } from "react";
 
 export type UseFocusMode = {

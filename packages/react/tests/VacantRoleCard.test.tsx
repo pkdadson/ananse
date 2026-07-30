@@ -16,6 +16,6 @@ describe("VacantRoleCard", () => {
 
   it("has vacant role attribute for styling and testing", () => {
     const { container } = render(<VacantRoleCard title="TBD" />);
-    expect(container.querySelector('[data-canvas-role="vacant"]')).not.toBeNull();
+    expect(container.querySelector('[data-ananse-role="vacant"]')).not.toBeNull();
   });
 });

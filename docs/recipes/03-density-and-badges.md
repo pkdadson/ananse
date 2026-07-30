@@ -12,7 +12,7 @@ Switch card density with `nodeVariant` and surface people metadata as chips.
 | `minimal` | Executive overview | Initials + name |
 
 ```tsx
-import { OrgChart, type NodeVariant } from "@canvas/react";
+import { OrgChart, type NodeVariant } from "@ananse/react";
 
 const variant: NodeVariant = "detailed";
 
@@ -23,7 +23,7 @@ Manager and executive nodes compose the same face helper, so density applies acr
 
 ## Badge fields on Employee
 
-Optional fields on `@canvas/core` `Employee`:
+Optional fields on `@ananse/core` `Employee`:
 
 | Field | Values / type | Badge behavior |
 |-------|----------------|----------------|
@@ -71,7 +71,7 @@ import {
   EmployeeCardDetailed,
   EmployeeBadges,
   ManagerCard,
-} from "@canvas/react";
+} from "@ananse/react";
 
 <EmployeeCardDetailed data={employee} />
 <EmployeeBadges data={employee} />

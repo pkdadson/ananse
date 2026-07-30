@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * Scaffold a minimal Vite + React app that uses Canvas.
+ * Scaffold a minimal Vite + React app that uses Ananse.
  *
- *   node scripts/create-canvas-app.mjs my-org-app
+ *   node scripts/create-ananse-app.mjs my-org-app
  *   pnpm create-app my-org-app
  */
 
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-const name = process.argv[2] ?? "canvas-app";
+const name = process.argv[2] ?? "ananse-app";
 const dir = resolve(process.cwd(), name);
 
 if (existsSync(dir)) {
@@ -29,9 +29,9 @@ const pkg = {
     preview: "vite preview",
   },
   dependencies: {
-    "@canvas/core": "^0.1.0",
-    "@canvas/react": "^0.1.0",
-    "@canvas/tokens": "^0.1.0",
+    "@ananse/core": "^0.1.0",
+    "@ananse/react": "^0.1.0",
+    "@ananse/tokens": "^0.1.0",
     react: "^18.3.1",
     "react-dom": "^18.3.1",
   },
@@ -105,7 +105,7 @@ createRoot(document.getElementById("root")!).render(
 );
 writeFileSync(
   join(dir, "src/App.tsx"),
-  `import { OrgChart } from "@canvas/react";
+  `import { OrgChart } from "@ananse/react";
 
 const people = [
   { id: "ceo", name: "Ada Lovelace", title: "CEO", managerId: null },
@@ -131,7 +131,7 @@ writeFileSync(
   join(dir, "README.md"),
   `# ${name}
 
-Scaffolded by Canvas \`create-canvas-app\`.
+Scaffolded by Ananse \`create-ananse-app\`.
 
 \`\`\`bash
 pnpm install

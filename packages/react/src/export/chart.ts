@@ -1,4 +1,4 @@
-import { downloadJson, toPrettyJson } from "@canvas/core";
+import { downloadJson, toPrettyJson } from "@ananse/core";
 
 /** Download chart data as JSON (org / mind / flow payloads). */
 export function exportChartJson(filename: string, data: unknown): void {
@@ -18,7 +18,7 @@ export async function copyChartJson(data: unknown): Promise<boolean> {
  */
 export async function exportElementPng(
   element: HTMLElement,
-  filename = "canvas-chart.png",
+  filename = "ananse-chart.png",
 ): Promise<void> {
   const rect = element.getBoundingClientRect();
   const width = Math.max(1, Math.ceil(rect.width));

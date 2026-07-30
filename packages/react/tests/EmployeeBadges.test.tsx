@@ -5,7 +5,7 @@ import { EmployeeBadges } from "../src/nodes/EmployeeBadges.js";
 describe("EmployeeBadges", () => {
   it("renders nothing when no badge fields", () => {
     const { container } = render(<EmployeeBadges data={{ id: "1", name: "Ada Lovelace" }} />);
-    const root = container.querySelector("[data-canvas-badges]");
+    const root = container.querySelector("[data-ananse-badges]");
     expect(root).not.toBeNull();
     expect(root?.childElementCount).toBe(0);
   });
@@ -14,7 +14,7 @@ describe("EmployeeBadges", () => {
     const { container } = render(
       <EmployeeBadges data={{ id: "1", name: "Ada Lovelace", workMode: "remote" }} />,
     );
-    const root = container.querySelector("[data-canvas-badges]");
+    const root = container.querySelector("[data-ananse-badges]");
     expect(root?.textContent).toMatch(/remote/i);
   });
 
@@ -22,7 +22,7 @@ describe("EmployeeBadges", () => {
     const { container } = render(
       <EmployeeBadges data={{ id: "1", name: "Ada Lovelace", employmentType: "contractor" }} />,
     );
-    const root = container.querySelector("[data-canvas-badges]");
+    const root = container.querySelector("[data-ananse-badges]");
     expect(root?.textContent).toMatch(/contractor/i);
   });
 
@@ -30,7 +30,7 @@ describe("EmployeeBadges", () => {
     const { container } = render(
       <EmployeeBadges data={{ id: "1", name: "Ada Lovelace", tenureYears: 3 }} />,
     );
-    const root = container.querySelector("[data-canvas-badges]");
+    const root = container.querySelector("[data-ananse-badges]");
     expect(root?.textContent).toContain("3y");
   });
 });

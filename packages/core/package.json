@@ -1,14 +1,14 @@
 {
-  "name": "@canvas/core",
+  "name": "@ananse/core",
   "version": "0.1.0",
-  "description": "Framework-agnostic types, layout, schemas, data adapters, and edit mutations for Canvas org charts.",
+  "description": "Framework-agnostic types, layout, schemas, data adapters, and edit mutations for Ananse org charts.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "sideEffects": false,
-  "keywords": ["org-chart", "hierarchy", "dagre", "hr", "typescript", "canvas"],
+  "keywords": ["org-chart", "hierarchy", "dagre", "hr", "typescript", "ananse"],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

@@ -1,7 +1,7 @@
 {
-  "name": "@canvas/react",
+  "name": "@ananse/react",
   "version": "0.1.0",
-  "description": "React OrgChart viewer and editor for Canvas — densities, search, reparent, inspector.",
+  "description": "React OrgChart viewer and editor for Ananse — densities, search, reparent, inspector.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -14,8 +14,8 @@
     "react-dom": ">=18.2.0"
   },
   "dependencies": {
-    "@canvas/core": "workspace:*",
-    "@canvas/tokens": "workspace:*",
+    "@ananse/core": "workspace:*",
+    "@ananse/tokens": "workspace:*",
     "@xyflow/react": "^12.3.0"
   },
   "exports": {

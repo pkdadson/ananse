@@ -1,11 +1,11 @@
-# @canvas/react
+# @ananse/react
 
-React org chart, mind map, and flow builder for Canvas.
+React org chart, mind map, and flow builder for Ananse.
 
 ## Quickstart
 
 ```tsx
-import { OrgChart } from "@canvas/react";
+import { OrgChart } from "@ananse/react";
 
 <OrgChart defaultData={people} height="100vh" showSearch />
 ```

@@ -40,6 +40,11 @@ const HEADER_ALIASES: Record<string, keyof Employee | "dottedlinemanagerids"> = 
   managerid: "managerId",
   manager: "managerId",
   reportsto: "managerId",
+  // Generic hierarchy aliases (accounts, products, geo, …)
+  parentid: "managerId",
+  parent: "managerId",
+  parentnode: "managerId",
+  parentnodeid: "managerId",
   email: "email",
   mail: "email",
   location: "location",

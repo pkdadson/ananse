@@ -4,7 +4,7 @@
  *   pnpm add -D storybook @storybook/react-vite
  *   // point stories glob at packages/react/stories
  */
-import type { Employee } from "@canvas/core";
+import type { Employee } from "@ananse/core";
 import { OrgChart } from "../src/OrgChart.js";
 
 const sample: Employee[] = [
@@ -28,7 +28,7 @@ const sample: Employee[] = [
 ];
 
 export default {
-  title: "Canvas/OrgChart",
+  title: "Ananse/OrgChart",
   component: OrgChart,
 };
 

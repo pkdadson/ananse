@@ -13,8 +13,10 @@ export function StraightEdge(props: EdgeProps): ReactElement {
     <BaseEdge
       id={props.id}
       path={path}
+      {...(props.markerEnd !== undefined ? { markerEnd: props.markerEnd } : {})}
+      {...(props.markerStart !== undefined ? { markerStart: props.markerStart } : {})}
       style={{
-        stroke: "var(--canvas-edge-color)",
+        stroke: "var(--ananse-edge-color)",
         strokeWidth: 2.25,
         ...props.style,
       }}

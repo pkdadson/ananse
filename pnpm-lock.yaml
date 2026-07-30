@@ -17,13 +17,13 @@ importers:
 
   apps/demo:
     dependencies:
-      '@canvas/core':
+      '@ananse/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@canvas/react':
+      '@ananse/react':
         specifier: workspace:*
         version: link:../../packages/react
-      '@canvas/tokens':
+      '@ananse/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
       '@xyflow/react':
@@ -79,10 +79,10 @@ importers:
 
   packages/react:
     dependencies:
-      '@canvas/core':
+      '@ananse/core':
         specifier: workspace:*
         version: link:../core
-      '@canvas/tokens':
+      '@ananse/tokens':
         specifier: workspace:*
         version: link:../tokens
       '@xyflow/react':

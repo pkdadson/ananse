@@ -1,10 +1,10 @@
-import type { AddVacantRoleInput, Employee, EmployeePatch, OrgMutationEvent } from "@canvas/core";
+import type { AddVacantRoleInput, Employee, EmployeePatch, OrgMutationEvent } from "@ananse/core";
 import {
   addVacantRole as applyAddVacant,
   removeEmployee as applyRemove,
   reparentEmployee as applyReparent,
   updateEmployee as applyUpdate,
-} from "@canvas/core";
+} from "@ananse/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const HISTORY_LIMIT = 50;

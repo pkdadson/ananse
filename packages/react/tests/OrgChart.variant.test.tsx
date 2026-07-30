@@ -1,4 +1,4 @@
-import type { Employee } from "@canvas/core";
+import type { Employee } from "@ananse/core";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { OrgChart } from "../src/OrgChart.js";

@@ -9,9 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@canvas/core": "workspace:*",
-    "@canvas/react": "workspace:*",
-    "@canvas/tokens": "workspace:*",
+    "@ananse/core": "workspace:*",
+    "@ananse/react": "workspace:*",
+    "@ananse/tokens": "workspace:*",
     "@xyflow/react": "^12.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
