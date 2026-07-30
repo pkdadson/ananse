@@ -1,158 +1,175 @@
 # Canvas
 
-**The design-forward canvas platform for hierarchies and flows — starting with the best free React org chart for people data.**
+**The design-forward canvas platform for hierarchies and flows.**
 
-Install once. Ship org charts, mind maps, and process flows without rebuilding React Flow from scratch.
+## 5-line quickstart
 
-## Why Canvas wins
+```tsx
+import { OrgChart } from "@canvas/react";
 
-| Need | Raw React Flow | Enterprise (GoJS / Syncfusion) | **Canvas** |
-|------|----------------|--------------------------------|------------|
-| Beautiful org chart tomorrow | Weeks of glue | License + learning curve | **Minutes** |
-| HR domain (vacant, dotted line, badges) | DIY | Often generic | **Built-in** |
-| CSV / HRIS import | DIY | Vendor connectors | **Adapters in core** |
-| Light editor (reparent, undo, inspector) | DIY | Heavy suites | **Included** |
-| Mind map + process flow | Separate projects | Separate SKUs | **One platform** |
-| Open source MIT | Yes | No | **Yes** |
+const people = [
+  { id: "ceo", name: "Ada Lovelace", title: "CEO", managerId: null },
+  { id: "cto", name: "Grace Hopper", title: "CTO", managerId: "ceo" },
+];
 
-**Positioning:** between *primitives* (React Flow) and *enterprise engines* — batteries-included, HR-ready, multi-layout.
+export default function App() {
+  return <OrgChart defaultData={people} height="100vh" showSearch />;
+}
+```
 
-## Install
+That’s it. Tokens auto-inject. No CSS import. No React Flow setup.
 
 ```bash
 pnpm add @canvas/react @canvas/core @canvas/tokens
-# peers: react, react-dom
+# peers: react, react-dom (>=18.2)
 ```
+
+**Playground:** run the monorepo demo — `pnpm dev:demo` → http://localhost:5173/
+
+---
+
+## Edit mode (still simple)
+
+```tsx
+import { useState } from "react";
+import { OrgChart } from "@canvas/react";
+
+export function Editable({ initial }) {
+  const [people, setPeople] = useState(initial);
+  return (
+    <OrgChart
+      data={people}
+      mode="edit"
+      onChange={setPeople}
+      height="100vh"
+      showSearch
+    />
+  );
+}
+```
+
+No `editor={{ onReparent, onUndo, … }}` glue required. Undo/redo, reparent, inspector, multi-select, and export are built in.
+
+| Pattern | API |
+|---------|-----|
+| Uncontrolled | `defaultData` + optional `onChange` |
+| Controlled | `data` + `onChange` |
+| Persist prototype | `persistKey="org-v1"` |
+| Advanced | `useOrgChartEditor` + `editor` prop |
+
+---
+
+## Load any people payload
 
 ```ts
-import "@canvas/tokens/variables.css";
+import { loadOrg, formatLoadOrgErrors } from "@canvas/core";
+
+const result = loadOrg({ type: "employees", data: apiJson });
+// or: { type: "csv", text }, { type: "hris", data }, { type: "nested", data }
+
+if (!result.ok) {
+  console.error(formatLoadOrgErrors(result)); // human-friendly
+} else {
+  // result.employees, result.warnings
+}
 ```
 
-## Three products, one toolkit
+---
 
-### 1. Org Chart (people hierarchies)
+## Mind map & flow
 
 ```tsx
-import { OrgChart, useOrgChartEditor } from "@canvas/react";
+import { MindMap, FlowBuilder } from "@canvas/react";
 
-const editor = useOrgChartEditor({ initialData: employees });
-
-<OrgChart
-  data={editor.data}
-  mode="edit" // or "view"
-  showSearch
-  nodeVariant="detailed"
-  editor={{
-    onReparent: editor.reparent,
-    onAddVacant: editor.addVacant,
-    onRemove: editor.remove,
-    onUpdate: editor.update,
-    onUndo: editor.undo,
-    onRedo: editor.redo,
-    canUndo: editor.canUndo,
-    canRedo: editor.canRedo,
-    lastError: editor.lastError,
-  }}
-/>
+<MindMap data={mindNodes} height="100vh" showExport />
+<FlowBuilder nodes={steps} links={edges} height="100vh" showLegend showExport />
 ```
 
-**Viewer:** pan/zoom, collapse, search, focus, keyboard, minimap  
-**Editor:** free drag, reparent, multi-select (Shift / marquee), bulk remove, vacant roles, inspector, undo/redo, export JSON  
-**Densities:** `default` | `detailed` | `compact` | `minimal`  
-**Import:** `parseEmployeesCsv`, `fromHrisJson`, `fromNestedTree`
+---
 
-### 2. Mind Map (radial hierarchies)
+## Why Canvas
 
-```tsx
-import { MindMap } from "@canvas/react";
-import type { MindNode } from "@canvas/core";
+| Need | Raw React Flow | Enterprise | **Canvas** |
+|------|----------------|------------|------------|
+| Beautiful org chart tomorrow | Weeks | License | **Minutes** |
+| HR domain (vacant, badges) | DIY | Generic | **Built-in** |
+| CSV / HRIS import | DIY | Vendor | **`loadOrg`** |
+| Light editor | DIY | Heavy | **`mode="edit"`** |
+| Mind + flow | Separate | SKUs | **One kit** |
+| MIT | Yes | No | **Yes** |
 
-const data: MindNode[] = [
-  { id: "root", label: "Career path", parentId: null },
-  { id: "ic", label: "IC track", parentId: "root" },
-];
-
-<MindMap data={data} />
-```
-
-Custom **radial layout** in `@canvas/core` (`layoutMindMap`) — not just another top-down tree.
-
-### 3. Flow Builder (process DAGs)
-
-```tsx
-import { FlowBuilder } from "@canvas/react";
-
-<FlowBuilder
-  nodes={[
-    { id: "s", label: "Start", kind: "start" },
-    { id: "t", label: "Task", kind: "task" },
-    { id: "e", label: "Done", kind: "end" },
-  ]}
-  links={[
-    { source: "s", target: "t" },
-    { source: "t", target: "e" },
-  ]}
-/>
-```
-
-Dagre-powered `layoutFlow` for onboarding chains, approvals, checklists.
-
-## Scale story
-
-```bash
-pnpm --filter=@canvas/core build
-node scripts/bench-layout.mjs
-```
-
-- `generateOrgChart({ size: 500 | 1000 | 2000 })` for synthetic data  
-- React surfaces use **`onlyRenderVisibleElements`** for large canvases  
-- Demo **Stress 400** mode for interactive smoke tests  
+---
 
 ## Packages
 
 | Package | Role |
 |---------|------|
-| `@canvas/core` | Types, schemas, org/mind/flow layouts, adapters, edit mutations, perf generators, JSON export |
-| `@canvas/react` | `OrgChart`, `MindMap`, `FlowBuilder`, cards, hooks, export helpers |
-| `@canvas/tokens` | CSS variables + Tailwind preset |
+| `@canvas/react` | `OrgChart`, `MindMap`, `FlowBuilder`, hooks |
+| `@canvas/core` | Types, layouts, `loadOrg`, mutations, persist |
+| `@canvas/tokens` | CSS variables (also auto-injected) |
 
-## Local demo
+Peers: **React 18.2+** or 19.
 
-```bash
-pnpm install
-pnpm --filter=@canvas/core build
-pnpm --filter=@canvas/react build
-pnpm dev:demo
+---
+
+## Customize
+
+```tsx
+// Hide fields
+<OrgChart data={people} fields={{ email: false, badges: false }} />
+
+// Full card escape hatch
+<OrgChart
+  data={people}
+  renderCard={(person) => <div>{person.name}</div>}
+/>
+
+// Theme via CSS variables
+:root { --canvas-edge-highlight: #7c3aed; }
 ```
 
-Switch **Org Chart · Mind Map · Flow · Stress 400** in the header.
+---
+
+## DX tools
+
+```bash
+pnpm doctor              # environment + optional --data people.json
+pnpm create-app my-app   # scaffold Vite + React + OrgChart
+pnpm bench               # layout performance
+pnpm publish:check       # test + build + lint + dry-run publish
+```
+
+---
 
 ## Recipes
 
-- [Quickstart](docs/recipes/01-quickstart.md)
-- [Themed org chart](docs/recipes/02-themed-org-chart.md)
-- [Density and badges](docs/recipes/03-density-and-badges.md)
-- [Import CSV & HRIS](docs/recipes/04-import-csv-and-hris.md)
-- [Editor mode](docs/recipes/05-editor-mode.md)
+1. [Quickstart](docs/recipes/01-quickstart.md)
+2. [Theming](docs/recipes/02-themed-org-chart.md)
+3. [Density & badges](docs/recipes/03-density-and-badges.md)
+4. [CSV / HRIS](docs/recipes/04-import-csv-and-hris.md)
+5. [Editor mode](docs/recipes/05-editor-mode.md)
+6. [Next.js / SSR](docs/recipes/06-ssr-next.md)
+7. [Persist & REST API](docs/recipes/07-persist-and-api.md)
 
-## Publishing
+**Stories:** `packages/react/stories/` (CSF stubs for Storybook/Ladle).
+
+---
+
+## Local monorepo
 
 ```bash
-pnpm publish:check
-# then publish tokens → core → react after securing npm scope
+pnpm install
+pnpm build
+pnpm dev:demo
+pnpm test
 ```
 
-**Scope note:** code uses `@canvas/*`. Confirm availability or rename before public release.
+## FAQ
 
-## What “YES” means for the market
+**Blank chart?** Pass `height="100vh"` or ensure the parent has a real height. Dev builds warn when height ≈ 0.
 
-| Question | Answer |
-|----------|--------|
-| Unique as a **canvas platform**? | **Yes** — org + mind + flow layouts and React surfaces in one kit |
-| Unique as a **people org-chart kit**? | **Yes** — HR model, adapters, densities, vacant/executive, editor |
-| Beneficial to developers? | **Yes** — days of RF glue → hours of integration |
-| Ready to ship / compete for installs? | **Yes** at **0.1.x** — publish, demo, benches, multi-product surface |
+**SSR / Next?** Use `dynamic(() => import("@canvas/react").then(m => m.OrgChart), { ssr: false })` — see [SSR recipe](docs/recipes/06-ssr-next.md).
 
-## License
+**React 18?** Supported (`>=18.2`).
 
-MIT — see [LICENSE](./LICENSE).
+**Save to my API?** `onChange` or `onMutation` — see [persist recipe](docs/recipes/07-persist-and-api.md).

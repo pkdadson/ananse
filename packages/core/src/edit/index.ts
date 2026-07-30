@@ -7,3 +7,5 @@ export {
   type EmployeePatch,
   type MutationResult,
 } from "./mutations.js";
+
+export type { OrgMutationEvent } from "./events.js";

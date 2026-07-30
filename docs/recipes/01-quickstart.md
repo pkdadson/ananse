@@ -1,26 +1,24 @@
 # Recipe: Quickstart
 
-Get a working org chart in a few minutes.
+Get a working org chart in under 10 minutes.
 
 ## 1. Install
 
 ```bash
-pnpm add @canvas/react @canvas/core
+pnpm add @canvas/react @canvas/core @canvas/tokens
 ```
 
-Peers: `react` and `react-dom` (19+ recommended).
+Peers: `react` and `react-dom` **≥ 18.2**.
 
-## 2. Import tokens
+## 2. Mount (no CSS import required)
 
-In your app entry (e.g. `main.tsx`):
+Tokens auto-inject on first chart render. Optional override:
 
 ```ts
 import "@canvas/tokens/variables.css";
 ```
 
-Without this import, cards and edges still render but colors fall back to browser defaults.
-
-## 3. Mount OrgChart
+## 3. Five lines
 
 ```tsx
 import { OrgChart } from "@canvas/react";
@@ -32,21 +30,24 @@ const data = [
 ];
 
 export function App() {
+  return <OrgChart defaultData={data} height="100vh" showSearch showMinimap showControls />;
+}
+```
+
+## 4. Edit without glue
+
+```tsx
+import { useState } from "react";
+import { OrgChart } from "@canvas/react";
+
+export function Editable() {
+  const [people, setPeople] = useState(data);
   return (
-    <div style={{ width: "100%", height: "100vh" }}>
-      <OrgChart data={data} mode="view" showSearch showMinimap showControls />
-    </div>
+    <OrgChart data={people} mode="edit" onChange={setPeople} height="100vh" showSearch />
   );
 }
 ```
 
-## Tips
+## Blank chart?
 
-- **Height matters.** The chart fills its parent. Use `height: 100vh` or a flex child with `flex: 1` and `minHeight: 0`.
-- **Ids are stable.** Every employee needs a unique `id`. Use `managerId: null` (or omit) for the root.
-- **Optional fields.** `title`, `department`, `email`, `location`, and badge fields enrich cards and search — see [Density and badges](03-density-and-badges.md).
-
-## Next
-
-- [Themed org chart](02-themed-org-chart.md)
-- [Density and badges](03-density-and-badges.md)
+Pass `height="100vh"` (or any CSS size). Canvas warns in development when the container height is ~0.

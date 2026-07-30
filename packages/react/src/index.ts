@@ -1,4 +1,10 @@
-export { OrgChart, type OrgChartProps } from "./OrgChart.js";
+export {
+  OrgChart,
+  type OrgChartProps,
+  type OrgChartEditorApi,
+  type CardFieldsConfig,
+  type RenderCardContext,
+} from "./OrgChart.js";
 export { MindMap, type MindMapProps } from "./MindMap.js";
 export { FlowBuilder, type FlowBuilderProps } from "./FlowBuilder.js";
 export { exportChartJson, copyChartJson, exportElementPng } from "./export/chart.js";
@@ -35,4 +41,3 @@ export {
 } from "./hooks/useOrgChartEditor.js";
 export { EditorToolbar, type EditorToolbarProps } from "./controls/EditorToolbar.js";
 export { InspectorPanel, type InspectorPanelProps } from "./controls/InspectorPanel.js";
-export type { OrgChartEditorApi } from "./OrgChart.js";

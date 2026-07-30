@@ -4,8 +4,15 @@ import type {
   EmployeePatch,
   LayoutResult,
   OrgChartLayoutOptions,
+  OrgMutationEvent,
 } from "@canvas/core";
-import { getDescendants, getDirectReports, layoutOrgChart } from "@canvas/core";
+import {
+  getDescendants,
+  getDirectReports,
+  layoutOrgChart,
+  loadOrgFromStorage,
+  saveOrgToStorage,
+} from "@canvas/core";
 import {
   Background,
   Controls,
@@ -21,7 +28,16 @@ import {
   useNodesState,
   useReactFlow,
 } from "@xyflow/react";
-import { type ReactElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type ReactElement,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import "@xyflow/react/dist/style.css";
 import { EditorToolbar } from "./controls/EditorToolbar.js";
 import { InspectorPanel } from "./controls/InspectorPanel.js";
@@ -30,6 +46,7 @@ import { DottedEdge } from "./edges/DottedEdge.js";
 import { SolidEdge } from "./edges/SolidEdge.js";
 import { useFocusMode } from "./hooks/useFocusMode.js";
 import { useKeyboardNav } from "./hooks/useKeyboardNav.js";
+import { useOrgChartEditor } from "./hooks/useOrgChartEditor.js";
 import { useOrgChartState } from "./hooks/useOrgChartState.js";
 import { useSearch } from "./hooks/useSearch.js";
 import { ExecutiveCard } from "./nodes/ExecutiveCard.js";
@@ -37,6 +54,27 @@ import { ManagerCard } from "./nodes/ManagerCard.js";
 import { NodeShell } from "./nodes/NodeShell.js";
 import { VacantRoleCard } from "./nodes/VacantRoleCard.js";
 import { EmployeeFace, type NodeVariant } from "./nodes/employeeFace.js";
+import { injectCanvasTokens } from "./styles/injectTokens.js";
+import { type CanvasHeight, chartShellStyle, useZeroHeightWarning } from "./utils/mount.js";
+
+/** Toggle people-card fields without writing a custom renderer. */
+export type CardFieldsConfig = {
+  email?: boolean;
+  location?: boolean;
+  badges?: boolean;
+  department?: boolean;
+  photo?: boolean;
+};
+
+export type RenderCardContext = {
+  variant: NodeVariant;
+  isManager: boolean;
+  isExecutive: boolean;
+  isVacant: boolean;
+  directReportCount: number;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
+};
 
 export type OrgChartNodeData = {
   employee: Employee;
@@ -48,13 +86,79 @@ export type OrgChartNodeData = {
   searchDim: boolean;
   focusDim: boolean;
   nodeVariant: NodeVariant;
+  fields?: CardFieldsConfig | undefined;
+  renderCard?: ((employee: Employee, ctx: RenderCardContext) => ReactNode) | undefined;
+  isExecutive?: boolean;
+  isVacant?: boolean;
 };
+
+function applyFields(employee: Employee, fields?: CardFieldsConfig): Employee {
+  if (!fields) return employee;
+  const next: Employee = { id: employee.id, name: employee.name };
+  if (fields.photo !== false && employee.photoUrl !== undefined) next.photoUrl = employee.photoUrl;
+  if (employee.title !== undefined) next.title = employee.title;
+  if (fields.department !== false && employee.department !== undefined) {
+    next.department = employee.department;
+  }
+  if (employee.managerId !== undefined) next.managerId = employee.managerId;
+  if (employee.dottedLineManagerIds !== undefined) {
+    next.dottedLineManagerIds = employee.dottedLineManagerIds;
+  }
+  if (fields.email !== false && employee.email !== undefined) next.email = employee.email;
+  if (fields.location !== false && employee.location !== undefined) {
+    next.location = employee.location;
+  }
+  if (fields.badges !== false) {
+    if (employee.tenureYears !== undefined) next.tenureYears = employee.tenureYears;
+    if (employee.employmentType !== undefined) next.employmentType = employee.employmentType;
+    if (employee.workMode !== undefined) next.workMode = employee.workMode;
+  }
+  if (employee.meta !== undefined) next.meta = employee.meta;
+  return next;
+}
+
+function renderNodeFace(data: OrgChartNodeData): ReactNode {
+  const employee = applyFields(data.employee, data.fields);
+  const ctx: RenderCardContext = {
+    variant: data.nodeVariant,
+    isManager: data.directReportCount > 0,
+    isExecutive: Boolean(data.isExecutive),
+    isVacant: Boolean(data.isVacant),
+    directReportCount: data.directReportCount,
+    collapsed: data.collapsed,
+    onToggleCollapse: data.onToggleCollapse,
+  };
+  if (data.renderCard) return data.renderCard(employee, ctx);
+  if (data.isVacant) {
+    return (
+      <VacantRoleCard
+        title={data.title}
+        {...(employee.department !== undefined ? { department: employee.department } : {})}
+      />
+    );
+  }
+  if (data.isExecutive) {
+    return <ExecutiveCard data={employee} variant={data.nodeVariant} />;
+  }
+  if (data.directReportCount > 0) {
+    return (
+      <ManagerCard
+        data={employee}
+        directReportCount={data.directReportCount}
+        collapsed={data.collapsed}
+        onToggleCollapse={data.onToggleCollapse}
+        variant={data.nodeVariant}
+      />
+    );
+  }
+  return <EmployeeFace data={employee} variant={data.nodeVariant} />;
+}
 
 function EmployeeNode({ data }: NodeProps & { data: OrgChartNodeData }): ReactElement {
   const dim = data.searchDim || data.focusDim;
   return (
     <NodeShell searchDim={data.searchDim} dim={dim}>
-      <EmployeeFace data={data.employee} variant={data.nodeVariant} />
+      {renderNodeFace(data)}
     </NodeShell>
   );
 }
@@ -63,7 +167,7 @@ function ExecutiveNode({ data }: NodeProps & { data: OrgChartNodeData }): ReactE
   const dim = data.searchDim || data.focusDim;
   return (
     <NodeShell searchDim={data.searchDim} dim={dim}>
-      <ExecutiveCard data={data.employee} variant={data.nodeVariant} />
+      {renderNodeFace({ ...data, isExecutive: true })}
     </NodeShell>
   );
 }
@@ -72,10 +176,7 @@ function VacantNode({ data }: NodeProps & { data: OrgChartNodeData }): ReactElem
   const dim = data.searchDim || data.focusDim;
   return (
     <NodeShell searchDim={data.searchDim} dim={dim}>
-      <VacantRoleCard
-        title={data.title}
-        {...(data.department !== undefined ? { department: data.department } : {})}
-      />
+      {renderNodeFace({ ...data, isVacant: true })}
     </NodeShell>
   );
 }
@@ -84,13 +185,7 @@ function ManagerNode({ data }: NodeProps & { data: OrgChartNodeData }): ReactEle
   const dim = data.searchDim || data.focusDim;
   return (
     <NodeShell searchDim={data.searchDim} dim={dim}>
-      <ManagerCard
-        data={data.employee}
-        directReportCount={data.directReportCount}
-        collapsed={data.collapsed}
-        onToggleCollapse={data.onToggleCollapse}
-        variant={data.nodeVariant}
-      />
+      {renderNodeFace(data)}
     </NodeShell>
   );
 }
@@ -114,7 +209,7 @@ function pickNodeType(e: Employee, isManager: boolean): NodeTypeName {
   return "employee";
 }
 
-/** Optional editor integration (pair with `useOrgChartEditor`). */
+/** Optional advanced editor integration (pair with `useOrgChartEditor`). */
 export type OrgChartEditorApi = {
   onReparent: (employeeId: string, newManagerId: string | null) => boolean | undefined;
   onAddVacant?: (input: AddVacantRoleInput) => boolean | undefined;
@@ -128,18 +223,48 @@ export type OrgChartEditorApi = {
 };
 
 export type OrgChartProps = {
-  data: Employee[];
-  mode: "view" | "edit";
+  /**
+   * Controlled people data. When set, parent owns state —
+   * pair with `onChange` in edit mode.
+   */
+  data?: Employee[];
+  /**
+   * Uncontrolled initial data (simple path).
+   * @example <OrgChart defaultData={employees} mode="edit" onChange={setEmployees} />
+   */
+  defaultData?: Employee[];
+  /** @default "view" */
+  mode?: "view" | "edit";
+  /** Fires after every successful edit (reparent, remove, undo, …). */
+  onChange?: (employees: Employee[]) => void;
+  /** Granular mutation stream for API sync. */
+  onMutation?: (event: OrgMutationEvent) => void;
   layoutOptions?: OrgChartLayoutOptions;
   showSearch?: boolean;
   showMinimap?: boolean;
   showControls?: boolean;
   nodeVariant?: NodeVariant;
-  /** When mode is edit, wire mutations from useOrgChartEditor. */
+  /**
+   * Advanced: wire your own editor. Prefer `mode="edit"` + `onChange`
+   * which auto-creates undo/redo/reparent for you.
+   */
   editor?: OrgChartEditorApi;
   showEditorToolbar?: boolean;
-  /** Side panel to edit selected person fields (edit mode). Default true when editor provided. */
+  /** Side panel to edit selected person fields (edit mode). Default true. */
   showInspector?: boolean;
+  /** CSS height — number (px) or any CSS string. Default minHeight 480. */
+  height?: CanvasHeight;
+  className?: string;
+  style?: CSSProperties;
+  /** Show/hide card fields without a custom renderer. */
+  fields?: CardFieldsConfig;
+  /** Full card escape hatch. */
+  renderCard?: (employee: Employee, ctx: RenderCardContext) => ReactNode;
+  /**
+   * Persist edits to localStorage under this key (demo / prototype).
+   * Loads on mount when using defaultData.
+   */
+  persistKey?: string;
 };
 
 function nodeSize(n: Node): { w: number; h: number } {
@@ -216,6 +341,21 @@ function findDropTargetId(
   return null;
 }
 
+type OrgChartInnerProps = {
+  data: Employee[];
+  mode: "view" | "edit";
+  layoutOptions?: OrgChartLayoutOptions;
+  showSearch?: boolean;
+  showMinimap?: boolean;
+  showControls?: boolean;
+  nodeVariant?: NodeVariant;
+  editor?: OrgChartEditorApi;
+  showEditorToolbar?: boolean;
+  showInspector?: boolean;
+  fields?: CardFieldsConfig;
+  renderCard?: (employee: Employee, ctx: RenderCardContext) => ReactNode;
+};
+
 function OrgChartInner({
   data,
   mode,
@@ -227,7 +367,9 @@ function OrgChartInner({
   editor,
   showEditorToolbar = true,
   showInspector = true,
-}: OrgChartProps): ReactElement {
+  fields,
+  renderCard,
+}: OrgChartInnerProps): ReactElement {
   const isEdit = mode === "edit" && editor !== undefined;
   const { visibleIds, isCollapsed, toggleCollapse } = useOrgChartState(data);
   const { query, setQuery, matchIds } = useSearch(data);
@@ -352,10 +494,24 @@ function OrgChartInner({
           searchDim: false,
           focusDim: false,
           nodeVariant,
+          fields,
+          renderCard,
+          isExecutive: type === "executive",
+          isVacant: type === "vacant",
         } satisfies OrgChartNodeData,
       };
     });
-  }, [layout.nodes, data, isCollapsed, toggleCollapse, nodeVariant, isEdit, pinnedPositions]);
+  }, [
+    layout.nodes,
+    data,
+    isCollapsed,
+    toggleCollapse,
+    nodeVariant,
+    isEdit,
+    pinnedPositions,
+    fields,
+    renderCard,
+  ]);
 
   const layoutEdges = useMemo((): Edge[] => {
     return layout.edges.map((e) => ({
@@ -642,10 +798,120 @@ function OrgChartInner({
   );
 }
 
+function resolveSeed(props: OrgChartProps): Employee[] {
+  if (props.persistKey) {
+    const stored = loadOrgFromStorage(props.persistKey);
+    if (stored && stored.length > 0) return stored;
+  }
+  return props.defaultData ?? props.data ?? [];
+}
+
+/**
+ * Org chart viewer + editor.
+ *
+ * @example View
+ * ```tsx
+ * <OrgChart data={employees} height="100vh" showSearch />
+ * ```
+ *
+ * @example Edit (no editor glue)
+ * ```tsx
+ * <OrgChart defaultData={employees} mode="edit" onChange={setEmployees} height="100vh" />
+ * ```
+ */
 export function OrgChart(props: OrgChartProps): ReactElement {
+  injectCanvasTokens();
+
+  const {
+    data: dataProp,
+    defaultData,
+    mode = "view",
+    onChange,
+    onMutation,
+    editor: editorProp,
+    height,
+    className,
+    style,
+    persistKey,
+    fields,
+    renderCard,
+    showSearch = false,
+    showMinimap = true,
+    showControls = true,
+    showEditorToolbar = true,
+    showInspector = true,
+    nodeVariant = "default",
+    layoutOptions,
+  } = props;
+
+  if (dataProp === undefined && defaultData === undefined && !editorProp) {
+    throw new Error(
+      "[OrgChart] Pass data={employees} (controlled) or defaultData={employees} (uncontrolled).",
+    );
+  }
+
+  const seedRef = useRef<Employee[] | null>(null);
+  if (seedRef.current === null) seedRef.current = resolveSeed(props);
+
+  const autoEditor = useOrgChartEditor({
+    initialData: seedRef.current,
+    // Controlled when parent passes `data` and no external editor API
+    ...(editorProp === undefined && dataProp !== undefined ? { data: dataProp } : {}),
+    onChange: (next) => {
+      onChange?.(next);
+      if (persistKey) saveOrgToStorage(persistKey, next);
+    },
+    ...(onMutation ? { onMutation } : {}),
+  });
+
+  const resolvedData =
+    editorProp !== undefined
+      ? (dataProp ?? autoEditor.data)
+      : dataProp !== undefined
+        ? autoEditor.data
+        : autoEditor.data;
+
+  const resolvedEditor: OrgChartEditorApi | undefined =
+    mode === "edit"
+      ? (editorProp ?? {
+          onReparent: autoEditor.reparent,
+          onAddVacant: autoEditor.addVacant,
+          onRemove: autoEditor.remove,
+          onUpdate: autoEditor.update,
+          onUndo: autoEditor.undo,
+          onRedo: autoEditor.redo,
+          canUndo: autoEditor.canUndo,
+          canRedo: autoEditor.canRedo,
+          lastError: autoEditor.lastError,
+        })
+      : undefined;
+
+  const shellRef = useRef<HTMLDivElement>(null);
+  useZeroHeightWarning(shellRef, "OrgChart", { skip: height !== undefined });
+
   return (
-    <ReactFlowProvider>
-      <OrgChartInner {...props} />
-    </ReactFlowProvider>
+    <div
+      ref={shellRef}
+      className={className}
+      style={chartShellStyle(height, style)}
+      data-canvas-root="org"
+    >
+      <ReactFlowProvider>
+        <OrgChartInner
+          data={resolvedData}
+          mode={mode}
+          {...(layoutOptions ? { layoutOptions } : {})}
+          showSearch={showSearch}
+          showMinimap={showMinimap}
+          showControls={showControls}
+          nodeVariant={nodeVariant}
+          {...(resolvedEditor ? { editor: resolvedEditor } : {})}
+          showEditorToolbar={showEditorToolbar}
+          showInspector={showInspector}
+          {...(fields ? { fields } : {})}
+          {...(renderCard ? { renderCard } : {})}
+        />
+      </ReactFlowProvider>
+    </div>
   );
 }

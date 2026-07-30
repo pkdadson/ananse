@@ -14,7 +14,9 @@
     "format": "biome format --write .",
     "dev:demo": "pnpm --filter=demo dev",
     "publish:check": "pnpm test && pnpm build && pnpm lint && pnpm --filter=@canvas/core publish --dry-run --no-git-checks && pnpm --filter=@canvas/react publish --dry-run --no-git-checks && pnpm --filter=@canvas/tokens publish --dry-run --no-git-checks",
-    "bench": "pnpm --filter=@canvas/core build && node scripts/bench-layout.mjs"
+    "bench": "pnpm --filter=@canvas/core build && node scripts/bench-layout.mjs",
+    "doctor": "node scripts/canvas-doctor.mjs",
+    "create-app": "node scripts/create-canvas-app.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",

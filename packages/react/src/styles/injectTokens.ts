@@ -1,0 +1,82 @@
+/** Inlined design tokens — auto-injected so apps skip the CSS import. */
+const CANVAS_TOKENS_CSS = `
+:root {
+  --canvas-bg: hsl(0 0% 100%);
+  --canvas-node-bg: hsl(0 0% 100%);
+  --canvas-node-border: hsl(240 5.9% 90%);
+  --canvas-node-text: hsl(240 10% 4%);
+  --canvas-node-text-muted: hsl(240 5% 34%);
+  --canvas-node-radius: 12px;
+  --canvas-node-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  --canvas-node-shadow-hover: 0 8px 20px -2px rgb(0 0 0 / 0.18);
+  --canvas-edge-color: hsl(240 6% 48%);
+  --canvas-edge-width: 2px;
+  --canvas-edge-highlight: hsl(221 83% 53%);
+  --canvas-focus-ring: hsl(221 83% 53%);
+  --canvas-selection-bg: hsl(221 83% 53% / 0.12);
+  --canvas-selection-ring: hsl(221 83% 53%);
+  --canvas-dept-engineering: hsl(221 83% 53%);
+  --canvas-dept-design: hsl(280 65% 60%);
+  --canvas-dept-product: hsl(160 60% 45%);
+  --canvas-dept-sales: hsl(30 90% 55%);
+  --canvas-dept-marketing: hsl(340 75% 55%);
+  --canvas-dept-hr: hsl(190 70% 50%);
+  --canvas-dept-finance: hsl(45 90% 50%);
+  --canvas-dept-operations: hsl(250 45% 55%);
+  --canvas-tenure-new: hsl(200 90% 55%);
+  --canvas-tenure-tenured: hsl(160 60% 45%);
+  --canvas-tenure-veteran: hsl(45 90% 55%);
+  --canvas-role-executive-border: hsl(45 90% 55%);
+  --canvas-role-executive-shadow: 0 8px 24px 0 rgb(0 0 0 / 0.12);
+  --canvas-role-vacant-border: hsl(240 5% 70%);
+  --canvas-role-vacant-bg: hsl(240 4.8% 96%);
+  --canvas-badge-bg: hsl(240 5% 96%);
+  --canvas-badge-text: hsl(240 4% 30%);
+  --canvas-badge-remote: hsl(200 90% 40%);
+  --canvas-badge-hybrid: hsl(250 45% 55%);
+  --canvas-badge-onsite: hsl(160 40% 35%);
+  --canvas-badge-contractor: hsl(30 90% 45%);
+  --canvas-badge-intern: hsl(280 50% 50%);
+  --canvas-badge-tenure: hsl(221 83% 53%);
+}
+[data-theme="dark"] {
+  --canvas-bg: hsl(240 10% 4%);
+  --canvas-node-bg: hsl(240 10% 8%);
+  --canvas-node-border: hsl(240 5% 20%);
+  --canvas-node-text: hsl(0 0% 100%);
+  --canvas-node-text-muted: hsl(240 5% 65%);
+  --canvas-edge-color: hsl(240 5% 55%);
+  --canvas-role-vacant-bg: hsl(240 10% 12%);
+  --canvas-badge-bg: hsl(240 6% 16%);
+  --canvas-badge-text: hsl(240 5% 80%);
+  --canvas-selection-ring: hsl(221 83% 62%);
+}
+.react-flow__node.selected > div,
+.react-flow__node.selected [data-canvas-card],
+.react-flow__node.selected [data-canvas-role],
+.react-flow__node.selected [data-canvas-mind-node],
+.react-flow__node.selected [data-canvas-flow-node] {
+  outline: 3px solid var(--canvas-selection-ring);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--canvas-selection-bg), var(--canvas-node-shadow-hover);
+}
+.react-flow__node.selectable:focus-visible > div {
+  outline: 2px solid var(--canvas-focus-ring);
+  outline-offset: 2px;
+}
+`;
+
+let done = false;
+
+/** Inject Canvas tokens once (SSR-safe). Override by setting CSS vars after mount. */
+export function injectCanvasTokens(): void {
+  if (done) return;
+  done = true;
+  if (typeof document === "undefined") return;
+  if (document.getElementById("canvas-tokens-injected")) return;
+  const style = document.createElement("style");
+  style.id = "canvas-tokens-injected";
+  style.setAttribute("data-canvas-tokens", "true");
+  style.textContent = CANVAS_TOKENS_CSS;
+  document.head.appendChild(style);
+}

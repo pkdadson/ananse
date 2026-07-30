@@ -1,5 +1,5 @@
 import type { MindMapLayoutOptions, MindNode } from "@canvas/core";
-import { layoutMindMap } from "@canvas/core";
+import { downloadJson, layoutMindMap } from "@canvas/core";
 import {
   Background,
   Controls,
@@ -13,9 +13,18 @@ import {
   useEdgesState,
   useNodesState,
 } from "@xyflow/react";
-import { type ReactElement, useEffect, useMemo } from "react";
+import {
+  type CSSProperties,
+  type ReactElement,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 import "@xyflow/react/dist/style.css";
 import { StraightEdge } from "./edges/StraightEdge.js";
+import { injectCanvasTokens } from "./styles/injectTokens.js";
+import { type CanvasHeight, chartShellStyle, useZeroHeightWarning } from "./utils/mount.js";
 
 type MindData = { label: string; color?: string; isRoot?: boolean };
 
@@ -42,7 +51,6 @@ function MindNodeView({ data }: NodeProps & { data: MindData }): ReactElement {
         lineHeight: 1.25,
       }}
     >
-      {/* Four handles so radial edges attach from the nearest side */}
       <Handle type="target" id="t" position={Position.Top} style={{ opacity: 0 }} />
       <Handle type="target" id="r" position={Position.Right} style={{ opacity: 0 }} />
       <Handle type="target" id="b" position={Position.Bottom} style={{ opacity: 0 }} />
@@ -56,7 +64,6 @@ function MindNodeView({ data }: NodeProps & { data: MindData }): ReactElement {
   );
 }
 
-// Module-level — avoids React Flow warning #002 (unstable nodeTypes/edgeTypes)
 const mindNodeTypes = { mind: MindNodeView };
 const mindEdgeTypes = { straight: StraightEdge };
 
@@ -64,9 +71,25 @@ export type MindMapProps = {
   data: MindNode[];
   layoutOptions?: MindMapLayoutOptions;
   showControls?: boolean;
+  /** Allow free drag of nodes. @default true */
+  editable?: boolean;
+  /** Called when the user finishes dragging a node (positions are visual only). */
+  onChange?: (nodes: MindNode[]) => void;
+  /** Show Export JSON control. @default false */
+  showExport?: boolean;
+  height?: CanvasHeight;
+  className?: string;
+  style?: CSSProperties;
 };
 
-function MindMapInner({ data, layoutOptions, showControls = true }: MindMapProps): ReactElement {
+function MindMapInner({
+  data,
+  layoutOptions,
+  showControls = true,
+  editable = true,
+  onChange,
+  showExport = false,
+}: MindMapProps): ReactElement {
   const layout = useMemo(() => layoutMindMap(data, layoutOptions), [data, layoutOptions]);
 
   const rootId = useMemo(() => {
@@ -87,9 +110,9 @@ function MindMapInner({ data, layoutOptions, showControls = true }: MindMapProps
           color: n.data.color,
           isRoot: n.id === rootId,
         },
-        draggable: true,
+        draggable: editable,
       })),
-    [layout.nodes, rootId],
+    [layout.nodes, rootId, editable],
   );
 
   const initialEdges: Edge[] = useMemo(
@@ -116,8 +139,33 @@ function MindMapInner({ data, layoutOptions, showControls = true }: MindMapProps
     setEdges(initialEdges);
   }, [initialNodes, initialEdges, setNodes, setEdges]);
 
+  const handleDragStop = useCallback(() => {
+    if (!onChange) return;
+    // Positions are visual — parent still owns the tree model
+    onChange(data);
+  }, [onChange, data]);
+
   return (
-    <div style={{ width: "100%", height: "100%" }} data-canvas-mindmap>
+    <div style={{ position: "relative", width: "100%", height: "100%" }} data-canvas-mindmap>
+      {showExport ? (
+        <div style={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}>
+          <button
+            type="button"
+            onClick={() => downloadJson("mind-map.json", data)}
+            style={{
+              padding: "6px 12px",
+              borderRadius: 8,
+              border: "1px solid var(--canvas-node-border)",
+              background: "var(--canvas-node-bg)",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Export JSON
+          </button>
+        </div>
+      ) : null}
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -125,6 +173,8 @@ function MindMapInner({ data, layoutOptions, showControls = true }: MindMapProps
         onEdgesChange={onEdgesChange}
         nodeTypes={mindNodeTypes}
         edgeTypes={mindEdgeTypes}
+        nodesDraggable={editable}
+        onNodeDragStop={handleDragStop}
         fitView
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.2}
@@ -144,9 +194,19 @@ function MindMapInner({ data, layoutOptions, showControls = true }: MindMapProps
 }
 
 export function MindMap(props: MindMapProps): ReactElement {
+  injectCanvasTokens();
+  const shellRef = useRef<HTMLDivElement>(null);
+  useZeroHeightWarning(shellRef, "MindMap", { skip: props.height !== undefined });
   return (
-    <ReactFlowProvider>
-      <MindMapInner {...props} />
-    </ReactFlowProvider>
+    <div
+      ref={shellRef}
+      className={props.className}
+      style={chartShellStyle(props.height, props.style)}
+      data-canvas-root="mind"
+    >
+      <ReactFlowProvider>
+        <MindMapInner {...props} />
+      </ReactFlowProvider>
+    </div>
   );
 }

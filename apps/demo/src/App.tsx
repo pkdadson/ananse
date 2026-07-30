@@ -366,13 +366,20 @@ export function App(): ReactElement {
 
       <div style={{ flex: 1, minHeight: 0 }}>
         {product === "mind" ? (
-          <MindMap data={sampleMindMap} />
+          <MindMap data={sampleMindMap} height="100%" showExport />
         ) : product === "flow" ? (
-          <FlowBuilder nodes={sampleFlowNodes} links={sampleFlowLinks} showLegend />
+          <FlowBuilder
+            nodes={sampleFlowNodes}
+            links={sampleFlowLinks}
+            showLegend
+            showExport
+            height="100%"
+          />
         ) : (
           <OrgChart
             data={activeEditor.data}
             mode={mode}
+            height="100%"
             showSearch
             showMinimap={!isMobile}
             showControls

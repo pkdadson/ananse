@@ -1,19 +1,29 @@
-import type { AddVacantRoleInput, Employee, EmployeePatch } from "@canvas/core";
+import type { AddVacantRoleInput, Employee, EmployeePatch, OrgMutationEvent } from "@canvas/core";
 import {
   addVacantRole as applyAddVacant,
   removeEmployee as applyRemove,
   reparentEmployee as applyReparent,
   updateEmployee as applyUpdate,
 } from "@canvas/core";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const HISTORY_LIMIT = 50;
 
 export type UseOrgChartEditorOptions = {
-  /** Initial org data (used only on first mount). */
-  initialData: Employee[];
+  /**
+   * Uncontrolled initial data (first mount only).
+   * Prefer `defaultData` on `<OrgChart>` for the simple path.
+   */
+  initialData?: Employee[];
+  /**
+   * Controlled data — when set, editor state mirrors this array and
+   * mutations only fire `onChange` / `onMutation` (parent owns state).
+   */
+  data?: Employee[];
   /** Fires after every successful mutation (including undo/redo). */
   onChange?: (employees: Employee[]) => void;
+  /** Granular mutation stream for API sync / analytics. */
+  onMutation?: (event: OrgMutationEvent) => void;
 };
 
 export type UseOrgChartEditor = {
@@ -30,6 +40,8 @@ export type UseOrgChartEditor = {
   replace: (employees: Employee[]) => void;
   lastError: string | null;
   clearError: () => void;
+  /** True when `data` prop is driving state. */
+  controlled: boolean;
 };
 
 function sameData(a: Employee[], b: Employee[]): boolean {
@@ -38,82 +50,120 @@ function sameData(a: Employee[], b: Employee[]): boolean {
 
 export function useOrgChartEditor({
   initialData,
+  data: controlledData,
   onChange,
+  onMutation,
 }: UseOrgChartEditorOptions): UseOrgChartEditor {
+  const controlled = controlledData !== undefined;
+  const seed = controlledData ?? initialData ?? [];
+
   const [past, setPast] = useState<Employee[][]>([]);
-  const [present, setPresent] = useState<Employee[]>(() => initialData);
+  const [present, setPresent] = useState<Employee[]>(() => seed);
   const [future, setFuture] = useState<Employee[][]>([]);
   const [lastError, setLastError] = useState<string | null>(null);
 
+  const onChangeRef = useRef(onChange);
+  const onMutationRef = useRef(onMutation);
+  onChangeRef.current = onChange;
+  onMutationRef.current = onMutation;
+
+  // Mirror controlled data into present (no history push)
+  useEffect(() => {
+    if (!controlled || controlledData === undefined) return;
+    setPresent((prev) => (sameData(prev, controlledData) ? prev : controlledData));
+  }, [controlled, controlledData]);
+
+  const live = controlled ? (controlledData ?? present) : present;
+
   const commit = useCallback(
-    (next: Employee[]) => {
-      setPast((p) => {
-        const stacked = [...p, present];
-        return stacked.length > HISTORY_LIMIT ? stacked.slice(-HISTORY_LIMIT) : stacked;
-      });
-      setPresent(next);
-      setFuture([]);
-      onChange?.(next);
+    (next: Employee[], event: OrgMutationEvent) => {
+      if (!controlled) {
+        setPast((p) => {
+          const stacked = [...p, present];
+          return stacked.length > HISTORY_LIMIT ? stacked.slice(-HISTORY_LIMIT) : stacked;
+        });
+        setPresent(next);
+        setFuture([]);
+      } else {
+        // Controlled: parent updates `data`; still track history for undo if they re-render
+        setPast((p) => {
+          const stacked = [...p, live];
+          return stacked.length > HISTORY_LIMIT ? stacked.slice(-HISTORY_LIMIT) : stacked;
+        });
+        setFuture([]);
+      }
+      onChangeRef.current?.(next);
+      onMutationRef.current?.(event);
     },
-    [present, onChange],
+    [controlled, present, live],
   );
 
   const reparent = useCallback(
     (employeeId: string, newManagerId: string | null): boolean => {
-      const result = applyReparent(present, employeeId, newManagerId);
+      const result = applyReparent(live, employeeId, newManagerId);
       if (!result.ok) {
         setLastError(result.error);
         return false;
       }
-      if (sameData(present, result.employees)) return true;
+      if (sameData(live, result.employees)) return true;
       setLastError(null);
-      commit(result.employees);
+      commit(result.employees, {
+        type: "reparent",
+        employeeId,
+        newManagerId,
+        next: result.employees,
+      });
       return true;
     },
-    [present, commit],
+    [live, commit],
   );
 
   const addVacant = useCallback(
     (input: AddVacantRoleInput): boolean => {
-      const result = applyAddVacant(present, input);
+      const result = applyAddVacant(live, input);
       if (!result.ok) {
         setLastError(result.error);
         return false;
       }
       setLastError(null);
-      commit(result.employees);
+      commit(result.employees, { type: "addVacant", input, next: result.employees });
       return true;
     },
-    [present, commit],
+    [live, commit],
   );
 
   const remove = useCallback(
     (employeeId: string): boolean => {
-      const result = applyRemove(present, employeeId);
+      const result = applyRemove(live, employeeId);
       if (!result.ok) {
         setLastError(result.error);
         return false;
       }
       setLastError(null);
-      commit(result.employees);
+      commit(result.employees, { type: "remove", employeeId, next: result.employees });
       return true;
     },
-    [present, commit],
+    [live, commit],
   );
 
   const update = useCallback(
     (employeeId: string, patch: EmployeePatch): boolean => {
-      const result = applyUpdate(present, employeeId, patch);
+      const result = applyUpdate(live, employeeId, patch);
       if (!result.ok) {
         setLastError(result.error);
         return false;
       }
-      if (sameData(present, result.employees)) return true;
+      if (sameData(live, result.employees)) return true;
       setLastError(null);
-      commit(result.employees);
+      commit(result.employees, {
+        type: "update",
+        employeeId,
+        patch,
+        next: result.employees,
+      });
       return true;
     },
-    [present, commit],
+    [live, commit],
   );
 
   const undo = useCallback(() => {
@@ -121,41 +171,43 @@ export function useOrgChartEditor({
       if (p.length === 0) return p;
       const previous = p[p.length - 1];
       if (previous === undefined) return p;
-      setFuture((f) => [present, ...f]);
-      setPresent(previous);
-      onChange?.(previous);
+      setFuture((f) => [live, ...f]);
+      if (!controlled) setPresent(previous);
+      onChangeRef.current?.(previous);
+      onMutationRef.current?.({ type: "undo", next: previous });
       return p.slice(0, -1);
     });
     setLastError(null);
-  }, [present, onChange]);
+  }, [live, controlled]);
 
   const redo = useCallback(() => {
     setFuture((f) => {
       if (f.length === 0) return f;
       const [next, ...rest] = f;
       if (!next) return f;
-      setPast((p) => [...p, present]);
-      setPresent(next);
-      onChange?.(next);
+      setPast((p) => [...p, live]);
+      if (!controlled) setPresent(next);
+      onChangeRef.current?.(next);
+      onMutationRef.current?.({ type: "redo", next });
       return rest;
     });
     setLastError(null);
-  }, [present, onChange]);
+  }, [live, controlled]);
 
   const replace = useCallback(
     (employees: Employee[]) => {
-      if (sameData(present, employees)) return;
+      if (sameData(live, employees)) return;
       setLastError(null);
-      commit(employees);
+      commit(employees, { type: "replace", next: employees });
     },
-    [present, commit],
+    [live, commit],
   );
 
   const clearError = useCallback(() => setLastError(null), []);
 
   return useMemo(
     () => ({
-      data: present,
+      data: live,
       canUndo: past.length > 0,
       canRedo: future.length > 0,
       reparent,
@@ -167,9 +219,10 @@ export function useOrgChartEditor({
       replace,
       lastError,
       clearError,
+      controlled,
     }),
     [
-      present,
+      live,
       past.length,
       future.length,
       reparent,
@@ -181,6 +234,7 @@ export function useOrgChartEditor({
       replace,
       lastError,
       clearError,
+      controlled,
     ],
   );
 }

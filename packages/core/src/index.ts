@@ -6,3 +6,4 @@ export * from "./adapters/index.js";
 export * from "./edit/index.js";
 export * from "./perf/index.js";
 export * from "./export/index.js";
+export * from "./persist/index.js";

@@ -1,5 +1,5 @@
 import type { FlowLayoutOptions, FlowLink, FlowNode } from "@canvas/core";
-import { layoutFlow } from "@canvas/core";
+import { downloadJson, layoutFlow } from "@canvas/core";
 import {
   Background,
   Controls,
@@ -14,9 +14,18 @@ import {
   useEdgesState,
   useNodesState,
 } from "@xyflow/react";
-import { type ReactElement, useEffect, useMemo } from "react";
+import {
+  type CSSProperties,
+  type ReactElement,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 import "@xyflow/react/dist/style.css";
 import { SolidEdge } from "./edges/SolidEdge.js";
+import { injectCanvasTokens } from "./styles/injectTokens.js";
+import { type CanvasHeight, chartShellStyle, useZeroHeightWarning } from "./utils/mount.js";
 
 type FlowData = { label: string; kind?: FlowNode["kind"] };
 
@@ -58,7 +67,6 @@ function FlowNodeView({ data }: NodeProps & { data: FlowData }): ReactElement {
   );
 }
 
-// Module-level — avoids React Flow warning #002
 const flowNodeTypes = { flow: FlowNodeView };
 const flowEdgeTypes = { solid: SolidEdge };
 
@@ -68,6 +76,13 @@ export type FlowBuilderProps = {
   layoutOptions?: FlowLayoutOptions;
   showControls?: boolean;
   showLegend?: boolean;
+  /** Allow free drag. @default true */
+  editable?: boolean;
+  onChange?: (payload: { nodes: FlowNode[]; links: FlowLink[] }) => void;
+  showExport?: boolean;
+  height?: CanvasHeight;
+  className?: string;
+  style?: CSSProperties;
 };
 
 const LEGEND_ITEMS: { kind: keyof typeof KIND_STYLE; label: string }[] = [
@@ -128,6 +143,9 @@ function FlowBuilderInner({
   layoutOptions,
   showControls = true,
   showLegend = false,
+  editable = true,
+  onChange,
+  showExport = false,
 }: FlowBuilderProps): ReactElement {
   const layout = useMemo(
     () => layoutFlow(flowNodes, links, layoutOptions),
@@ -145,9 +163,9 @@ function FlowBuilderInner({
         sourcePosition: Position.Right,
         targetPosition: Position.Left,
         data: { label: n.data.label, kind: n.data.kind },
-        draggable: true,
+        draggable: editable,
       })),
-    [layout.nodes],
+    [layout.nodes, editable],
   );
 
   const initialEdges: Edge[] = useMemo(
@@ -191,9 +209,32 @@ function FlowBuilderInner({
     setEdges(initialEdges);
   }, [initialNodes, initialEdges, setNodes, setEdges]);
 
+  const handleDragStop = useCallback(() => {
+    onChange?.({ nodes: flowNodes, links });
+  }, [onChange, flowNodes, links]);
+
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }} data-canvas-flowbuilder>
       {showLegend ? <FlowLegend /> : null}
+      {showExport ? (
+        <div style={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}>
+          <button
+            type="button"
+            onClick={() => downloadJson("flow.json", { nodes: flowNodes, links })}
+            style={{
+              padding: "6px 12px",
+              borderRadius: 8,
+              border: "1px solid var(--canvas-node-border)",
+              background: "var(--canvas-node-bg)",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Export JSON
+          </button>
+        </div>
+      ) : null}
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -201,6 +242,8 @@ function FlowBuilderInner({
         onEdgesChange={onEdgesChange}
         nodeTypes={flowNodeTypes}
         edgeTypes={flowEdgeTypes}
+        nodesDraggable={editable}
+        onNodeDragStop={handleDragStop}
         fitView
         minZoom={0.2}
         maxZoom={2}
@@ -219,9 +262,19 @@ function FlowBuilderInner({
 }
 
 export function FlowBuilder(props: FlowBuilderProps): ReactElement {
+  injectCanvasTokens();
+  const shellRef = useRef<HTMLDivElement>(null);
+  useZeroHeightWarning(shellRef, "FlowBuilder", { skip: props.height !== undefined });
   return (
-    <ReactFlowProvider>
-      <FlowBuilderInner {...props} />
-    </ReactFlowProvider>
+    <div
+      ref={shellRef}
+      className={props.className}
+      style={chartShellStyle(props.height, props.style)}
+      data-canvas-root="flow"
+    >
+      <ReactFlowProvider>
+        <FlowBuilderInner {...props} />
+      </ReactFlowProvider>
+    </div>
   );
 }

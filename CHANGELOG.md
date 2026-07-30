@@ -4,6 +4,18 @@
 
 First installable milestone of the Canvas org-chart kit — expanded into a multi-layout platform.
 
+### DX 10/10 (Phases A–C)
+- **One-liner edit:** `mode="edit"` + `onChange` (no editor glue)
+- Controlled (`data`) / uncontrolled (`defaultData`) org charts
+- `height` prop + minHeight 480 + zero-height dev warning
+- Auto-injected design tokens (CSS import optional)
+- React peer range **≥18.2**
+- `loadOrg` + friendly errors; `persistKey` / localStorage helpers
+- `onMutation` events; `fields` + `renderCard` customization
+- Mind/Flow: height shell, export JSON, editable drag
+- `pnpm doctor`, `pnpm create-app`, SSR + persist recipes
+- Story stubs under `packages/react/stories/`
+
 ### Platform
 - `layoutMindMap` + `<MindMap>` (radial hierarchies)
 - `layoutFlow` + `<FlowBuilder>` (process DAGs)

@@ -1,66 +1,19 @@
 # @canvas/react
 
-React bindings for Canvas: `<OrgChart>`, HR card presets, viewer hooks, and editor mode.
+React org chart, mind map, and flow builder for Canvas.
 
-## Install
-
-```bash
-pnpm add @canvas/react @canvas/core
-# peers: react, react-dom
-```
-
-```ts
-import "@canvas/tokens/variables.css";
-```
-
-## OrgChart
+## Quickstart
 
 ```tsx
 import { OrgChart } from "@canvas/react";
 
-<OrgChart
-  data={employees}
-  mode="view"
-  showSearch
-  showMinimap
-  nodeVariant="detailed"
-/>
+<OrgChart defaultData={people} height="100vh" showSearch />
 ```
 
-### Editor mode
+## Edit
 
 ```tsx
-import { OrgChart, useOrgChartEditor } from "@canvas/react";
-
-const editor = useOrgChartEditor({ initialData: employees });
-
-<OrgChart
-  data={editor.data}
-  mode="edit"
-  editor={{
-    onReparent: editor.reparent,
-    onAddVacant: editor.addVacant,
-    onRemove: editor.remove,
-    onUndo: editor.undo,
-    onRedo: editor.redo,
-    canUndo: editor.canUndo,
-    canRedo: editor.canRedo,
-    lastError: editor.lastError,
-  }}
-/>
+<OrgChart data={people} mode="edit" onChange={setPeople} height="100vh" />
 ```
 
-See [recipe 05](../../docs/recipes/05-editor-mode.md).
-
-## Cards
-
-`EmployeeCard`, `EmployeeCardDetailed`, `EmployeeCardCompact`, `EmployeeCardMinimal`,
-`ManagerCard`, `ExecutiveCard`, `VacantRoleCard`, `EmployeeBadges`.
-
-## Hooks
-
-`useOrgChartState`, `useSearch`, `useFocusMode`, `useKeyboardNav`, `useOrgChartEditor`.
-
-## License
-
-MIT
+See the root [README](../../README.md) and [recipes](../../docs/recipes/).
