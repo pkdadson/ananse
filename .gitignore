@@ -7,3 +7,4 @@ coverage
 .vite
 ananse-*.png
 org-chart-*.png
+!docs/assets/*.png
