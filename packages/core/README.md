@@ -53,7 +53,7 @@ const { employees } = parseEmployeesCsv(csvText);
 // or fromNestedTree([rootNode])
 ```
 
-See [recipe 04](../../docs/recipes/04-import-csv-and-hris.md).
+See the [CSV / HRIS recipe](https://github.com/pkdadson/ananse/blob/main/docs/recipes/04-import-csv-and-hris.md).
 
 ### Edit mutations
 

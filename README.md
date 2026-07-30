@@ -177,9 +177,10 @@ pnpm publish:check       # test + build + lint + dry-run publish
 3. [Density & badges](docs/recipes/03-density-and-badges.md)
 4. [CSV / HRIS](docs/recipes/04-import-csv-and-hris.md)
 5. [Editor mode](docs/recipes/05-editor-mode.md)
-8. [Extensibility](docs/recipes/08-extensibility.md)
 6. [Next.js / SSR](docs/recipes/06-ssr-next.md)
 7. [Persist & REST API](docs/recipes/07-persist-and-api.md)
+8. [Extensibility](docs/recipes/08-extensibility.md)
+9. [Hierarchy beyond people](docs/recipes/09-hierarchy-beyond-people.md)
 
 **Stories:** `packages/react/stories/` (CSF stubs for Storybook/Ladle).
 
