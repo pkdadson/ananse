@@ -3,6 +3,13 @@
   "version": "0.1.0",
   "description": "CSS variables and Tailwind preset for the Ananse design system.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pkdadson/ananse.git",
+    "directory": "packages/tokens"
+  },
+  "homepage": "https://github.com/pkdadson/ananse#readme",
+  "bugs": "https://github.com/pkdadson/ananse/issues",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",

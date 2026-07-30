@@ -3,6 +3,13 @@
   "version": "0.1.0",
   "description": "React OrgChart viewer and editor for Ananse — densities, search, reparent, inspector.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pkdadson/ananse.git",
+    "directory": "packages/react"
+  },
+  "homepage": "https://github.com/pkdadson/ananse#readme",
+  "bugs": "https://github.com/pkdadson/ananse/issues",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

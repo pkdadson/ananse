@@ -3,6 +3,13 @@
   "version": "0.1.0",
   "description": "Framework-agnostic types, layout, schemas, data adapters, and edit mutations for Ananse org charts.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pkdadson/ananse.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/pkdadson/ananse#readme",
+  "bugs": "https://github.com/pkdadson/ananse/issues",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
