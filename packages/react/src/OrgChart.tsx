@@ -240,6 +240,10 @@ export type OrgChartProps = {
   /** Granular mutation stream for API sync. */
   onMutation?: (event: OrgMutationEvent) => void;
   layoutOptions?: OrgChartLayoutOptions;
+  /** Override React Flow fitView options (padding / zoom bounds). */
+  fitViewOptions?: { padding?: number; minZoom?: number; maxZoom?: number };
+  /** Absolute min zoom. Large orgs default lower automatically. */
+  minZoom?: number;
   showSearch?: boolean;
   showMinimap?: boolean;
   showControls?: boolean;
@@ -345,6 +349,8 @@ type OrgChartInnerProps = {
   data: Employee[];
   mode: "view" | "edit";
   layoutOptions?: OrgChartLayoutOptions;
+  fitViewOptions?: { padding?: number; minZoom?: number; maxZoom?: number };
+  minZoom?: number;
   showSearch?: boolean;
   showMinimap?: boolean;
   showControls?: boolean;
@@ -360,6 +366,8 @@ function OrgChartInner({
   data,
   mode,
   layoutOptions,
+  fitViewOptions: fitViewOptionsProp,
+  minZoom: minZoomProp,
   showSearch = false,
   showMinimap = true,
   showControls = true,
@@ -371,6 +379,17 @@ function OrgChartInner({
   renderCard,
 }: OrgChartInnerProps): ReactElement {
   const isEdit = mode === "edit" && editor !== undefined;
+  const largeOrg = data.length >= 100;
+  const resolvedFitView = useMemo(
+    () => ({
+      padding: largeOrg ? 0.08 : 0.15,
+      minZoom: largeOrg ? 0.05 : 0.1,
+      maxZoom: largeOrg ? 1.2 : 1.5,
+      ...fitViewOptionsProp,
+    }),
+    [largeOrg, fitViewOptionsProp],
+  );
+  const minZoom = minZoomProp ?? resolvedFitView.minZoom ?? 0.1;
   const { visibleIds, isCollapsed, toggleCollapse } = useOrgChartState(data);
   const { query, setQuery, matchIds } = useSearch(data);
   const { focusedIds, focusedId, setFocus, clearFocus } = useFocusMode(data);
@@ -755,22 +774,23 @@ function OrgChartInner({
           }}
           {...(isEdit ? { onNodeDragStop } : {})}
           fitView
-          fitViewOptions={{ padding: 0.15, minZoom: 0.1, maxZoom: 1.5 }}
-          minZoom={0.1}
+          fitViewOptions={resolvedFitView}
+          minZoom={minZoom}
           maxZoom={2}
           onlyRenderVisibleElements
           proOptions={{ hideAttribution: true }}
           defaultEdgeOptions={{
             type: "solid",
-            style: { stroke: "var(--canvas-edge-color)", strokeWidth: 2 },
+            style: {
+              stroke: "var(--canvas-edge-color)",
+              // Thinner edges on large orgs reduce visual noise
+              strokeWidth: largeOrg ? 1.25 : 2,
+            },
           }}
         >
           <Background gap={20} size={1} color="var(--canvas-node-border)" />
           {showControls ? (
-            <Controls
-              showInteractive={false}
-              fitViewOptions={{ padding: 0.15, minZoom: 0.1, maxZoom: 1.5 }}
-            />
+            <Controls showInteractive={false} fitViewOptions={resolvedFitView} />
           ) : null}
           {showMinimap ? (
             <MiniMap
@@ -842,6 +862,8 @@ export function OrgChart(props: OrgChartProps): ReactElement {
     showInspector = true,
     nodeVariant = "default",
     layoutOptions,
+    fitViewOptions,
+    minZoom,
   } = props;
 
   // Hooks must run unconditionally (no early throw before hooks).
@@ -916,6 +938,8 @@ export function OrgChart(props: OrgChartProps): ReactElement {
           data={resolvedData}
           mode={mode}
           {...(layoutOptions ? { layoutOptions } : {})}
+          {...(fitViewOptions ? { fitViewOptions } : {})}
+          {...(minZoom !== undefined ? { minZoom } : {})}
           showSearch={showSearch}
           showMinimap={showMinimap}
           showControls={showControls}

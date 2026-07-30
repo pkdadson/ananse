@@ -127,6 +127,14 @@ export function App(): ReactElement {
     if (mode === "edit") setEditHintDismissed(false);
   }, [mode]);
 
+  /** Switch product without carrying edit chrome into mind/flow/stress. */
+  const selectProduct = useCallback((next: DemoProduct) => {
+    setProduct(next);
+    setMode("view");
+    setMoreOpen(false);
+    setImportMsg(null);
+  }, []);
+
   const onCsvFile = useCallback(
     async (event: ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
@@ -140,7 +148,7 @@ export function App(): ReactElement {
           return;
         }
         editor.replace(employees);
-        setProduct("org");
+        selectProduct("org");
         setImportMsg(
           `Imported ${employees.length} people${warnings.length ? ` (${warnings.length} warnings)` : ""}`,
         );
@@ -148,7 +156,7 @@ export function App(): ReactElement {
         setImportMsg(err instanceof Error ? err.message : "Import failed");
       }
     },
-    [editor],
+    [editor, selectProduct],
   );
 
   const loadSampleCsv = useCallback(async () => {
@@ -156,17 +164,17 @@ export function App(): ReactElement {
     const text = await res.text();
     const { employees, warnings } = parseEmployeesCsv(text);
     editor.replace(employees);
-    setProduct("org");
+    selectProduct("org");
     setImportMsg(
       `Loaded sample CSV (${employees.length} people${warnings.length ? `, ${warnings.length} warnings` : ""})`,
     );
-  }, [editor]);
+  }, [editor, selectProduct]);
 
   const resetDemo = useCallback(() => {
     editor.replace(sampleCompany);
-    setProduct("org");
+    selectProduct("org");
     setImportMsg("Reset to built-in sample company");
-  }, [editor]);
+  }, [editor, selectProduct]);
 
   const modeGroup = supportsOrgControls ? (
     <div style={groupStyle} aria-label="Mode">
@@ -205,22 +213,24 @@ export function App(): ReactElement {
     </div>
   ) : null;
 
-  const densityGroup = supportsOrgControls ? (
-    <div style={groupStyle} aria-label="Card density">
-      {VARIANTS.map((v) => (
-        <button
-          key={v.id}
-          type="button"
-          onClick={() => setNodeVariant(v.id)}
-          style={btnStyle(nodeVariant === v.id)}
-          aria-pressed={nodeVariant === v.id}
-          title={v.label}
-        >
-          {isMobile ? v.short : v.label}
-        </button>
-      ))}
-    </div>
-  ) : null;
+  // Density only for sample org — stress forces minimal for readable fit-view
+  const densityGroup =
+    product === "org" ? (
+      <div style={groupStyle} aria-label="Card density">
+        {VARIANTS.map((v) => (
+          <button
+            key={v.id}
+            type="button"
+            onClick={() => setNodeVariant(v.id)}
+            style={btnStyle(nodeVariant === v.id)}
+            aria-pressed={nodeVariant === v.id}
+            title={v.label}
+          >
+            {isMobile ? v.short : v.label}
+          </button>
+        ))}
+      </div>
+    ) : null;
 
   return (
     <div style={{ width: "100vw", height: "100dvh", display: "flex", flexDirection: "column" }}>
@@ -252,7 +262,7 @@ export function App(): ReactElement {
               <button
                 key={p.id}
                 type="button"
-                onClick={() => setProduct(p.id)}
+                onClick={() => selectProduct(p.id)}
                 style={btnStyle(product === p.id)}
                 aria-pressed={product === p.id}
                 title={p.label}
@@ -331,9 +341,9 @@ export function App(): ReactElement {
             {product === "mind" ? "Mind Map — radial layout demo" : "Flow — process DAG demo"}
           </p>
         ) : null}
-        {product === "stress" && !isMobile ? (
+        {product === "stress" ? (
           <p style={{ margin: 0, fontSize: 12, color: "var(--canvas-node-text-muted)" }}>
-            400-node org · onlyRenderVisibleElements · pan/zoom to stress-test
+            Stress 400 · minimal cards · viewport culling · pan/zoom or Fit View
           </p>
         ) : null}
         {importMsg ? (
@@ -383,7 +393,16 @@ export function App(): ReactElement {
             showSearch
             showMinimap={!isMobile}
             showControls
-            nodeVariant={product === "stress" ? "compact" : nodeVariant}
+            nodeVariant={product === "stress" ? "minimal" : nodeVariant}
+            layoutOptions={
+              product === "stress"
+                ? { nodeWidth: 120, nodeHeight: 34, nodeSep: 12, rankSep: 32 }
+                : undefined
+            }
+            fitViewOptions={
+              product === "stress" ? { padding: 0.06, minZoom: 0.04, maxZoom: 1 } : undefined
+            }
+            minZoom={product === "stress" ? 0.04 : undefined}
             editor={
               mode === "edit"
                 ? {
