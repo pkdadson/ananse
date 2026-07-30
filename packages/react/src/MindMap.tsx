@@ -196,7 +196,7 @@ function MindMapInner({
 export function MindMap(props: MindMapProps): ReactElement {
   injectCanvasTokens();
   const shellRef = useRef<HTMLDivElement>(null);
-  useZeroHeightWarning(shellRef, "MindMap", { skip: props.height !== undefined });
+  useZeroHeightWarning(shellRef, "MindMap", props.height !== undefined);
   return (
     <div
       ref={shellRef}

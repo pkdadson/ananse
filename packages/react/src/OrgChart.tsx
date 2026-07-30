@@ -844,11 +844,8 @@ export function OrgChart(props: OrgChartProps): ReactElement {
     layoutOptions,
   } = props;
 
-  if (dataProp === undefined && defaultData === undefined && !editorProp) {
-    throw new Error(
-      "[OrgChart] Pass data={employees} (controlled) or defaultData={employees} (uncontrolled).",
-    );
-  }
+  // Hooks must run unconditionally (no early throw before hooks).
+  const missingData = dataProp === undefined && defaultData === undefined && !editorProp;
 
   const seedRef = useRef<Employee[] | null>(null);
   if (seedRef.current === null) seedRef.current = resolveSeed(props);
@@ -887,7 +884,25 @@ export function OrgChart(props: OrgChartProps): ReactElement {
       : undefined;
 
   const shellRef = useRef<HTMLDivElement>(null);
-  useZeroHeightWarning(shellRef, "OrgChart", { skip: height !== undefined });
+  useZeroHeightWarning(shellRef, "OrgChart", height !== undefined);
+
+  if (missingData) {
+    return (
+      <div
+        role="alert"
+        style={{
+          ...chartShellStyle(height, style),
+          display: "grid",
+          placeItems: "center",
+          padding: 24,
+          color: "var(--canvas-node-text)",
+          fontFamily: "system-ui, sans-serif",
+        }}
+      >
+        {"[OrgChart] Pass data={employees} or defaultData={employees}."}
+      </div>
+    );
+  }
 
   return (
     <div

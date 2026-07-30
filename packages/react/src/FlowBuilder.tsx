@@ -264,7 +264,7 @@ function FlowBuilderInner({
 export function FlowBuilder(props: FlowBuilderProps): ReactElement {
   injectCanvasTokens();
   const shellRef = useRef<HTMLDivElement>(null);
-  useZeroHeightWarning(shellRef, "FlowBuilder", { skip: props.height !== undefined });
+  useZeroHeightWarning(shellRef, "FlowBuilder", props.height !== undefined);
   return (
     <div
       ref={shellRef}
